@@ -27,8 +27,8 @@ Copy-Item "$TargetDir\kreuzberg_ffi.dll" "$StagingDir\lib\"
 Write-Host "✓ Staged FFI library: kreuzberg_ffi.dll"
 
 # Copy import libraries (required for linking)
-$ImportLibs = Get-ChildItem "$TargetDir\*.dll.a" -ErrorAction SilentlyContinue
-if ($ImportLibs) {
+$ImportLibs = @(Get-ChildItem "$TargetDir\*.dll.a" -ErrorAction SilentlyContinue)
+if ($ImportLibs.Count -gt 0) {
     Copy-Item "$TargetDir\*.dll.a" "$StagingDir\lib\"
     Write-Host "✓ Staged import libraries: $($ImportLibs.Count) files"
 }

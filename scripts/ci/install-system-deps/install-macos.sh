@@ -8,6 +8,13 @@ source "$REPO_ROOT/scripts/lib/retry.sh"
 
 echo "::group::Installing macOS dependencies"
 
+if [[ -d "/opt/homebrew/bin" ]]; then
+	export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:${PATH}"
+fi
+if [[ -d "/usr/local/bin" ]]; then
+	export PATH="/usr/local/bin:/usr/local/sbin:${PATH}"
+fi
+
 if ! brew list tesseract &>/dev/null; then
 	echo "Installing Tesseract..."
 	retry_with_backoff brew install tesseract || {
@@ -16,6 +23,11 @@ if ! brew list tesseract &>/dev/null; then
 	}
 else
 	echo "✓ Tesseract already installed"
+fi
+
+if ! command -v tesseract >/dev/null 2>&1; then
+	echo "Tesseract not on PATH after install; attempting brew link..."
+	brew link --overwrite tesseract >/dev/null 2>&1 || true
 fi
 
 if ! brew list tesseract-lang &>/dev/null; then
@@ -49,7 +61,14 @@ echo "::endgroup::"
 echo "::group::Verifying macOS installations"
 
 echo "Tesseract:"
-tesseract --version | head -1
+if command -v tesseract >/dev/null 2>&1; then
+	tesseract --version | head -1
+else
+	echo "::error::Tesseract not found on PATH after installation"
+	echo "PATH=$PATH"
+	brew --prefix tesseract 2>/dev/null || true
+	exit 1
+fi
 
 echo ""
 echo "Available languages:"

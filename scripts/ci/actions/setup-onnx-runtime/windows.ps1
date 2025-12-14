@@ -6,7 +6,7 @@ $ArchId = if ($args.Count -ge 3) { $args[2] } else { "" }
 
 $ExtractRoot = Join-Path $env:TEMP "onnxruntime"
 if ([string]::IsNullOrWhiteSpace($ArchId)) {
-  $ArchId = "${{ runner.arch }}"
+  $ArchId = $env:RUNNER_ARCH
 }
 $ArchId = $ArchId.ToLowerInvariant()
 if ($ArchId -eq "arm64") { $ArchId = "arm64" } else { $ArchId = "x64" }
@@ -32,7 +32,7 @@ if (!(Test-Path $OrtLib)) {
   exit 1
 }
 
-$LibFiles = Get-ChildItem -Path $OrtLib -Filter "*.lib" -ErrorAction SilentlyContinue
+$LibFiles = @(Get-ChildItem -Path $OrtLib -Filter "*.lib" -ErrorAction SilentlyContinue)
 if ($LibFiles.Count -eq 0) {
   Write-Error "ERROR: No ONNX Runtime library files found in $OrtLib"
   Get-ChildItem -Path $OrtLib | Write-Host
@@ -42,7 +42,7 @@ if ($LibFiles.Count -eq 0) {
 $DllDirs = @()
 foreach ($Candidate in @($OrtLib, $OrtBin)) {
   if (Test-Path $Candidate) {
-    $CandidateDlls = Get-ChildItem -Path $Candidate -Filter "*.dll" -File -ErrorAction SilentlyContinue
+    $CandidateDlls = @(Get-ChildItem -Path $Candidate -Filter "*.dll" -File -ErrorAction SilentlyContinue)
     if ($CandidateDlls.Count -gt 0) {
       $DllDirs += $Candidate
     }

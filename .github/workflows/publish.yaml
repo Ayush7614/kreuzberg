@@ -423,6 +423,7 @@ jobs:
           docker-options: ${{ steps.tesseract-cache.outputs.docker-options }}
           before-script-linux: |
             set -euo pipefail
+            rustup component add rust-src || true
             # Ensure OpenSSL is available inside the manylinux container for openssl-sys
             if command -v yum >/dev/null 2>&1; then
               yum install -y openssl openssl-devel pkgconfig
@@ -2037,7 +2038,7 @@ jobs:
 
       - name: Wait for npm indexing
         if: ${{ needs.prepare.outputs.dry_run != 'true' }}
-        run: scripts/publish/wait-for-package.sh npm "@kreuzberg/node" "${{ needs.prepare.outputs.version }}" 15
+        run: scripts/publish/wait-for-package.sh npm "@kreuzberg/node" "${{ needs.prepare.outputs.version }}" 25
 
       - name: Prepare main Node package metadata
         if: ${{ needs.prepare.outputs.dry_run != 'true' }}
@@ -2078,7 +2079,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.25.0
+          package_json_file: package.json
           run_install: false
 
       - name: Setup Rust toolchain
@@ -2142,7 +2143,7 @@ jobs:
 
       - name: Wait for npm indexing
         if: ${{ steps.npm_check.outputs.exists != 'true' }}
-        run: scripts/publish/wait-for-package.sh npm "@kreuzberg/wasm" "${{ needs.prepare.outputs.version }}" 15
+        run: scripts/publish/wait-for-package.sh npm "@kreuzberg/wasm" "${{ needs.prepare.outputs.version }}" 25
 
       - name: Package WASM artifacts
         if: ${{ steps.npm_check.outputs.exists != 'true' }}

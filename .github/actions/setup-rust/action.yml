@@ -4,7 +4,7 @@ inputs:
   components:
     description: Comma-separated list of Rust components to install
     required: false
-    default: rustfmt, clippy, llvm-tools-preview
+    default: rustfmt, clippy, llvm-tools-preview, rust-src
   target:
     description: Target triple to install
     required: false
