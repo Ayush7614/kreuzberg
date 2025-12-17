@@ -6,6 +6,28 @@
  */
 
 /**
+ * Token reduction configuration
+ */
+export interface TokenReductionConfig {
+	/** Token reduction mode */
+	mode?: string;
+	/** Preserve important words during reduction */
+	preserveImportantWords?: boolean;
+}
+
+/**
+ * Post-processor configuration
+ */
+export interface PostProcessorConfig {
+	/** Whether post-processing is enabled */
+	enabled?: boolean;
+	/** List of enabled processors */
+	enabledProcessors?: string[];
+	/** List of disabled processors */
+	disabledProcessors?: string[];
+}
+
+/**
  * Configuration for document extraction
  */
 export interface ExtractionConfig {
@@ -19,6 +41,32 @@ export interface ExtractionConfig {
 	pages?: PageExtractionConfig;
 	/** Language detection configuration */
 	languageDetection?: LanguageDetectionConfig;
+	/** PDF extraction options */
+	pdfOptions?: PdfConfig;
+	/** Token reduction configuration */
+	tokenReduction?: TokenReductionConfig;
+	/** Post-processor configuration */
+	postprocessor?: PostProcessorConfig;
+	/** Whether to use caching */
+	useCache?: boolean;
+	/** Enable quality processing */
+	enableQualityProcessing?: boolean;
+	/** Force OCR even if text is available */
+	forceOcr?: boolean;
+	/** Maximum concurrent extractions */
+	maxConcurrentExtractions?: number;
+}
+
+/**
+ * Tesseract OCR configuration
+ */
+export interface TesseractConfig {
+	/** Tesseract page segmentation mode */
+	psm?: number;
+	/** Enable table detection */
+	enableTableDetection?: boolean;
+	/** Character whitelist for recognition */
+	tesseditCharWhitelist?: string;
 }
 
 /**
@@ -31,6 +79,10 @@ export interface OcrConfig {
 	languages?: string[];
 	/** Whether to perform OCR */
 	enabled?: boolean;
+	/** Tesseract-specific configuration */
+	tesseractConfig?: TesseractConfig;
+	/** Language code for OCR */
+	language?: string;
 }
 
 /**
@@ -49,6 +101,28 @@ export interface ChunkingConfig {
 export interface ImageExtractionConfig {
 	/** Whether to extract images */
 	enabled?: boolean;
+	/** Target DPI for image extraction */
+	targetDpi?: number;
+	/** Maximum image dimension in pixels */
+	maxImageDimension?: number;
+	/** Automatically adjust DPI */
+	autoAdjustDpi?: boolean;
+	/** Minimum DPI threshold */
+	minDpi?: number;
+	/** Maximum DPI threshold */
+	maxDpi?: number;
+}
+
+/**
+ * PDF extraction configuration
+ */
+export interface PdfConfig {
+	/** Whether to extract images from PDF */
+	extractImages?: boolean;
+	/** Passwords for encrypted PDFs */
+	passwords?: string[];
+	/** Whether to extract metadata */
+	extractMetadata?: boolean;
 }
 
 /**

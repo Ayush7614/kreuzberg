@@ -144,11 +144,23 @@ export {
 export type * from "./types.js";
 export type {
 	Chunk,
+	ChunkMetadata,
 	ChunkingConfig,
 	ExtractedImage,
 	ExtractionConfig,
 	ExtractionResult,
+	ImageExtractionConfig,
+	LanguageDetectionConfig,
+	Metadata,
+	OcrBackendProtocol,
+	OcrConfig,
+	PageContent,
+	PageExtractionConfig,
+	PdfConfig,
+	PostProcessorConfig,
 	Table,
+	TesseractConfig,
+	TokenReductionConfig,
 } from "./types.js";
 
 // WASM binding imports (to be populated during build)

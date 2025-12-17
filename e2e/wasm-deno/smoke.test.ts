@@ -3,7 +3,7 @@
 
 import { extractBytes } from "npm:@kreuzberg/wasm@^4.0.0";
 import { assertions, buildConfig, resolveDocument, shouldSkipFixture } from "./helpers.ts";
-import type { ExtractionResult } from "npm:@kreuzberg/wasm@^4.0.0";
+import type { ExtractionResult } from "./helpers.ts";
 
 const TEST_TIMEOUT_MS = 60_000;
 
