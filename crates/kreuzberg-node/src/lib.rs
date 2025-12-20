@@ -19,7 +19,75 @@ use kreuzberg::{
 };
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
+use once_cell::sync::Lazy;
+use std::collections::HashSet;
 use std::ffi::{CStr, c_char};
+
+static KNOWN_FORMAT_FIELDS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
+    [
+        "format_type",
+        "title",
+        "author",
+        "keywords",
+        "creator",
+        "producer",
+        "creation_date",
+        "modification_date",
+        "page_count",
+        "sheet_count",
+        "sheet_names",
+        "from_email",
+        "from_name",
+        "to_emails",
+        "cc_emails",
+        "bcc_emails",
+        "message_id",
+        "attachments",
+        "description",
+        "summary",
+        "fonts",
+        "format",
+        "file_count",
+        "file_list",
+        "total_size",
+        "compressed_size",
+        "width",
+        "height",
+        "element_count",
+        "unique_elements",
+        "line_count",
+        "word_count",
+        "character_count",
+        "headers",
+        "links",
+        "code_blocks",
+        "canonical",
+        "base_href",
+        "og_title",
+        "og_description",
+        "og_image",
+        "og_url",
+        "og_type",
+        "og_site_name",
+        "twitter_card",
+        "twitter_title",
+        "twitter_description",
+        "twitter_image",
+        "twitter_site",
+        "twitter_creator",
+        "link_author",
+        "link_license",
+        "link_alternate",
+        "psm",
+        "output_format",
+        "table_count",
+        "table_rows",
+        "table_cols",
+    ]
+    .iter()
+    .copied()
+    .collect()
+});
 
 #[allow(unused_extern_crates)]
 extern crate kreuzberg_ffi;
@@ -1322,72 +1390,8 @@ impl TryFrom<JsExtractionResult> for RustExtractionResult {
                 .remove("error")
                 .and_then(|v| serde_json::from_value(v).ok());
 
-            let known_format_fields: std::collections::HashSet<&str> = [
-                "format_type",
-                "title",
-                "author",
-                "keywords",
-                "creator",
-                "producer",
-                "creation_date",
-                "modification_date",
-                "page_count",
-                "sheet_count",
-                "sheet_names",
-                "from_email",
-                "from_name",
-                "to_emails",
-                "cc_emails",
-                "bcc_emails",
-                "message_id",
-                "attachments",
-                "description",
-                "summary",
-                "fonts",
-                "format",
-                "file_count",
-                "file_list",
-                "total_size",
-                "compressed_size",
-                "width",
-                "height",
-                "element_count",
-                "unique_elements",
-                "line_count",
-                "word_count",
-                "character_count",
-                "headers",
-                "links",
-                "code_blocks",
-                "canonical",
-                "base_href",
-                "og_title",
-                "og_description",
-                "og_image",
-                "og_url",
-                "og_type",
-                "og_site_name",
-                "twitter_card",
-                "twitter_title",
-                "twitter_description",
-                "twitter_image",
-                "twitter_site",
-                "twitter_creator",
-                "link_author",
-                "link_license",
-                "link_alternate",
-                "psm",
-                "output_format",
-                "table_count",
-                "table_rows",
-                "table_cols",
-            ]
-            .iter()
-            .copied()
-            .collect();
-
             let mut format_fields = serde_json::Map::new();
-            for key in known_format_fields.iter() {
+            for key in KNOWN_FORMAT_FIELDS.iter() {
                 if let Some(value) = metadata_map.remove(*key) {
                     format_fields.insert(key.to_string(), value);
                 }
@@ -1703,13 +1707,6 @@ pub async fn extract_bytes(
 ) -> Result<JsExtractionResult> {
     let rust_config = resolve_config(config)?;
     let owned_data = data.to_vec();
-    #[cfg(debug_assertions)]
-    {
-        if std::env::var("KREUZBERG_DEBUG_GUTEN").as_deref() == Ok("1") && mime_type.starts_with("image/") {
-            let header: Vec<u8> = owned_data.iter().take(8).copied().collect();
-            eprintln!("[Rust Binding] Debug input header: {:?}", header);
-        }
-    }
 
     kreuzberg::extract_bytes(&owned_data, &mime_type, &rust_config)
         .await
@@ -1824,6 +1821,17 @@ pub fn batch_extract_bytes_sync(
     mime_types: Vec<String>,
     config: Option<JsExtractionConfig>,
 ) -> Result<Vec<JsExtractionResult>> {
+    if data_list.len() != mime_types.len() {
+        return Err(Error::new(
+            Status::InvalidArg,
+            format!(
+                "data_list length ({}) must match mime_types length ({})",
+                data_list.len(),
+                mime_types.len()
+            ),
+        ));
+    }
+
     let rust_config = resolve_config(config)?;
 
     let owned_data: Vec<Vec<u8>> = data_list.iter().map(|b| b.to_vec()).collect();
@@ -1878,6 +1886,17 @@ pub async fn batch_extract_bytes(
     mime_types: Vec<String>,
     config: Option<JsExtractionConfig>,
 ) -> Result<Vec<JsExtractionResult>> {
+    if data_list.len() != mime_types.len() {
+        return Err(Error::new(
+            Status::InvalidArg,
+            format!(
+                "data_list length ({}) must match mime_types length ({})",
+                data_list.len(),
+                mime_types.len()
+            ),
+        ));
+    }
+
     let rust_config = resolve_config(config)?;
 
     let owned_data: Vec<Vec<u8>> = data_list.iter().map(|b| b.to_vec()).collect();
@@ -1951,12 +1970,6 @@ impl RustPostProcessor for JsPostProcessor {
         result: &mut kreuzberg::ExtractionResult,
         _config: &kreuzberg::ExtractionConfig,
     ) -> std::result::Result<(), kreuzberg::KreuzbergError> {
-        eprintln!("\n[POST-PROCESSOR] === Starting JS Post-Processor '{}' ===", self.name);
-        eprintln!(
-            "[POST-PROCESSOR] Original Rust metadata.additional keys: {:?}",
-            result.metadata.additional.keys().collect::<Vec<_>>()
-        );
-
         let js_result =
             JsExtractionResult::try_from(result.clone()).map_err(|e| kreuzberg::KreuzbergError::Plugin {
                 message: format!("Failed to convert result for JavaScript PostProcessor: {}", e),
@@ -1966,11 +1979,6 @@ impl RustPostProcessor for JsPostProcessor {
             message: format!("Failed to serialize result for JavaScript PostProcessor: {}", e),
             plugin_name: self.name.clone(),
         })?;
-
-        eprintln!(
-            "[POST-PROCESSOR] JSON being sent to JS (first 500 chars): {}",
-            &json_input.chars().take(500).collect::<String>()
-        );
 
         let json_output = self
             .process_fn
@@ -1986,11 +1994,6 @@ impl RustPostProcessor for JsPostProcessor {
                 plugin_name: self.name.clone(),
             })?;
 
-        eprintln!(
-            "[POST-PROCESSOR] JSON received from JS (first 500 chars): {}",
-            &json_output.chars().take(500).collect::<String>()
-        );
-
         let updated: JsExtractionResult =
             serde_json::from_str(&json_output).map_err(|e| kreuzberg::KreuzbergError::Plugin {
                 message: format!(
@@ -2005,12 +2008,6 @@ impl RustPostProcessor for JsPostProcessor {
                 message: format!("Failed to convert result from JavaScript PostProcessor: {}", e),
                 plugin_name: self.name.clone(),
             })?;
-
-        eprintln!(
-            "[POST-PROCESSOR] Final Rust metadata.additional keys after conversion: {:?}",
-            rust_result.metadata.additional.keys().collect::<Vec<_>>()
-        );
-        eprintln!("[POST-PROCESSOR] === Completed JS Post-Processor '{}' ===\n", self.name);
 
         *result = rust_result;
         Ok(())
@@ -2454,13 +2451,6 @@ impl RustOcrBackend for JsOcrBackend {
         image_bytes: &[u8],
         config: &kreuzberg::OcrConfig,
     ) -> std::result::Result<kreuzberg::ExtractionResult, kreuzberg::KreuzbergError> {
-        #[cfg(debug_assertions)]
-        {
-            if std::env::var("KREUZBERG_DEBUG_GUTEN").as_deref() == Ok("1") {
-                let header: Vec<u8> = image_bytes.iter().take(8).copied().collect();
-                eprintln!("[Rust OCR] Debug input header: {:?}", header);
-            }
-        }
         let encoded = base64::engine::general_purpose::STANDARD.encode(image_bytes);
         let language = config.language.clone();
         let backend_name = self.name.clone();
