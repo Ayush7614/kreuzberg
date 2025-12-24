@@ -160,7 +160,7 @@ jobs:
           if [ "$RUNNER_OS" = "Windows" ]; then
             powershell -Command "Get-CimInstance Win32_OperatingSystem | Select-Object Version"
             powershell -Command "Get-CimInstance Win32_Processor | Select-Object Name"
-            powershell -Command "Get-CimInstance Win32_OperatingSystem | Select-Object @{Name='TotalMemoryGB'; Expression={[Math]::Round($_.TotalVisibleMemorySize / 1MB, 2)}}"
+            powershell -Command "Get-CimInstance Win32_OperatingSystem | Select-Object @{Name='TotalMemoryGB'; Expression={[Math]::Round(\$_.TotalVisibleMemorySize / 1MB, 2)}}"
           fi
           echo "=== Disk Space ==="
           df -h
@@ -321,7 +321,7 @@ jobs:
           if [ "$RUNNER_OS" = "Windows" ]; then
             powershell -Command "Get-CimInstance Win32_OperatingSystem | Select-Object Version"
             powershell -Command "Get-CimInstance Win32_Processor | Select-Object Name"
-            powershell -Command "Get-CimInstance Win32_OperatingSystem | Select-Object @{Name='TotalMemoryGB'; Expression={[Math]::Round($_.TotalVisibleMemorySize / 1MB, 2)}}"
+            powershell -Command "Get-CimInstance Win32_OperatingSystem | Select-Object @{Name='TotalMemoryGB'; Expression={[Math]::Round(\$_.TotalVisibleMemorySize / 1MB, 2)}}"
           fi
           echo "=== Disk Space ==="
           df -h

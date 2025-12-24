@@ -49,6 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Processor config pre-computation** - HashSet-based O(1) lookups for enabled/disabled post-processors (1-2% improvement)
 - **Environment variable configuration for API size limits** - `KREUZBERG_MAX_REQUEST_BODY_BYTES` and `KREUZBERG_MAX_MULTIPART_FIELD_BYTES` for fine-grained server configuration
 
+### Fixed
+
+- **CI Node workflow** - Fixed PowerShell variable escaping in system information dump step causing Windows builds to fail
+
 ### Changed
 
 - **Default API size limits set to 100MB** - Configurable via `KREUZBERG_MAX_UPLOAD_SIZE_MB` environment variable
