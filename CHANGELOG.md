@@ -5,6 +5,23 @@ All notable changes to Kreuzberg will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **PHP bindings** - New PHP extension with comprehensive FFI bindings
+  - PHP E2E test suite - Generated 65 comprehensive E2E tests from fixtures
+  - Email extraction tests
+  - HTML processing tests
+  - Image extraction tests
+  - OCR functionality tests (5 scenarios)
+  - Office document tests (16 formats)
+  - PDF extraction tests (16 scenarios)
+  - Plugin API tests (14 API functions)
+  - Smoke tests (7 formats)
+  - Structured data tests (JSON/YAML)
+  - XML extraction tests
+
 ## [4.0.0-rc.21] - 2025-12-26
 
 ### Fixed
@@ -23,18 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **PHP bindings** - New PHP extension with comprehensive FFI bindings
-  - PHP E2E test suite - Generated 65 comprehensive E2E tests from fixtures
-  - Email extraction tests
-  - HTML processing tests
-  - Image extraction tests
-  - OCR functionality tests (5 scenarios)
-  - Office document tests (16 formats)
-  - PDF extraction tests (16 scenarios)
-  - Plugin API tests (14 API functions)
-  - Smoke tests (7 formats)
-  - Structured data tests (JSON/YAML)
-  - XML extraction tests
 - **CLI test app** - Comprehensive test suite for validating kreuzberg-cli published to crates.io
   - Installation verification from crates.io
   - Extraction tests (PDF, DOCX, XLSX with JSON/markdown output)
