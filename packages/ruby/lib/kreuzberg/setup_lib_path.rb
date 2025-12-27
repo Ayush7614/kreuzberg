@@ -37,7 +37,7 @@ module Kreuzberg
 
       ensure_install_name(bundle)
       ensure_loader_rpath(bundle)
-    rescue Errno::ENOENT, IOError
+    rescue Errno::ENOENT, IOError # rubocop:disable Lint/SuppressedException
     end
     private_class_method :fix_macos_install_name
 

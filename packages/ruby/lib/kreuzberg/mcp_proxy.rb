@@ -53,7 +53,7 @@ module Kreuzberg
 
         Process.kill('TERM', @pid)
         Process.wait(@pid)
-      rescue Errno::ESRCH, Errno::ECHILD
+      rescue Errno::ESRCH, Errno::ECHILD # rubocop:disable Lint/SuppressedException
       ensure
         @pid = nil
         close_pipes
