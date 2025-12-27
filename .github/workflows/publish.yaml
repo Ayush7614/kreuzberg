@@ -69,7 +69,6 @@ jobs:
       release_cli: ${{ steps.meta.outputs.release_cli }}
       release_crates: ${{ steps.meta.outputs.release_crates }}
       release_rust: ${{ steps.meta.outputs.release_crates }}
-      release_docker: ${{ steps.meta.outputs.release_docker }}
       release_homebrew: ${{ steps.meta.outputs.release_homebrew }}
       release_java: ${{ steps.meta.outputs.release_java }}
       release_csharp: ${{ steps.meta.outputs.release_csharp }}
@@ -287,36 +286,6 @@ jobs:
             go-ffi-windows-x86_64.tar.gz
           SUMMARY_LABEL: Go FFI
         run: scripts/publish/check-release-assets.sh
-
-  check-docker:
-    name: Check if Docker image tag exists
-    needs: prepare
-    if: ${{ needs.prepare.outputs.release_docker == 'true' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      core_exists: ${{ steps.core.outputs.exists }}
-      full_exists: ${{ steps.full.outputs.exists }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.tag }}
-
-      - name: Check core image tag
-        id: core
-        env:
-          DOCKER_TAG: ${{ 'goldziher/kreuzberg' }}:${{ needs.prepare.outputs.version }}-core
-          SUMMARY_LABEL: core
-        run: scripts/publish/check-docker-tag.sh
-
-      - name: Check full image tag
-        id: full
-        env:
-          DOCKER_TAG: ${{ 'goldziher/kreuzberg' }}:${{ needs.prepare.outputs.version }}
-          SUMMARY_LABEL: full
-        run: scripts/publish/check-docker-tag.sh
 
   check-cratesio:
     name: Check if Rust crate exists on crates.io
@@ -1788,109 +1757,6 @@ jobs:
           path: runtimes/
           retention-days: 14
 
-  publish-docker:
-    name: Publish Docker image (${{ matrix.variant }})
-    needs:
-      - prepare
-      - validate-versions
-      - check-docker
-    runs-on: ubuntu-latest
-    timeout-minutes: 360
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variant: core
-            dockerfile: docker/Dockerfile.core
-            image: goldziher/kreuzberg
-            tag_suffix: "-core"
-            extra_tag: "core"
-          - variant: full
-            dockerfile: docker/Dockerfile.full
-            image: goldziher/kreuzberg
-            tag_suffix: ""
-            extra_tag: "latest"
-    if: ${{ needs.prepare.outputs.release_docker == 'true' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.checkout_ref }}
-          fetch-depth: 0
-          submodules: recursive
-
-      - name: Free up disk space
-        run: scripts/publish/ubuntu/free-disk-space.sh
-
-      - name: Ensure target commit
-        if: ${{ needs.prepare.outputs.target_sha != '' }}
-        run: git checkout --progress --force ${{ needs.prepare.outputs.target_sha }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Skip because tag already exists
-        if: ${{ needs.prepare.outputs.force_republish != 'true' && ((matrix.variant == 'core' && needs.check-docker.outputs.core_exists == 'true') || (matrix.variant == 'full' && needs.check-docker.outputs.full_exists == 'true')) }}
-        run: echo "Docker tag already exists for variant ${{ matrix.variant }}; skipping publish." >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Build AMD64 test image
-        if: ${{ needs.prepare.outputs.force_republish == 'true' || (matrix.variant == 'core' && needs.check-docker.outputs.core_exists != 'true') || (matrix.variant == 'full' && needs.check-docker.outputs.full_exists != 'true') }}
-        run: docker build -f ${{ matrix.dockerfile }} --build-arg PDFIUM_VERSION=${{ env.PDFIUM_VERSION }} -t kreuzberg-publish:${{ matrix.variant }}-test .
-
-      - name: Run Docker feature tests
-        if: ${{ needs.prepare.outputs.force_republish == 'true' || (matrix.variant == 'core' && needs.check-docker.outputs.core_exists != 'true') || (matrix.variant == 'full' && needs.check-docker.outputs.full_exists != 'true') }}
-        run: ./scripts/test_docker.sh --skip-build --image kreuzberg-publish:${{ matrix.variant }}-test --variant ${{ matrix.variant }} --verbose
-
-      - name: Log in to Docker Hub
-        if: ${{ needs.prepare.outputs.dry_run != 'true' && (needs.prepare.outputs.force_republish == 'true' || (matrix.variant == 'core' && needs.check-docker.outputs.core_exists != 'true') || (matrix.variant == 'full' && needs.check-docker.outputs.full_exists != 'true')) }}
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        if: ${{ needs.prepare.outputs.dry_run != 'true' && (needs.prepare.outputs.force_republish == 'true' || (matrix.variant == 'core' && needs.check-docker.outputs.core_exists != 'true') || (matrix.variant == 'full' && needs.check-docker.outputs.full_exists != 'true')) }}
-        id: docker_meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ matrix.image }}
-          tags: |
-            type=raw,value=${{ needs.prepare.outputs.version }}${{ matrix.tag_suffix }}
-            type=raw,value=${{ matrix.extra_tag }}
-
-      - name: Build and push image
-        if: ${{ needs.prepare.outputs.dry_run != 'true' && (needs.prepare.outputs.force_republish == 'true' || (matrix.variant == 'core' && needs.check-docker.outputs.core_exists != 'true') || (matrix.variant == 'full' && needs.check-docker.outputs.full_exists != 'true')) }}
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          push: true
-          build-args: |
-            PDFIUM_VERSION=${{ env.PDFIUM_VERSION }}
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max,scope=publish-docker-${{ matrix.variant }}
-
-      - name: Docker dry-run summary
-        if: ${{ needs.prepare.outputs.dry_run == 'true' }}
-        env:
-          IMAGE: ${{ matrix.image }}
-          VERSION: ${{ needs.prepare.outputs.version }}
-          TAG_SUFFIX: ${{ matrix.tag_suffix }}
-        run: scripts/publish/docker/dry-run-summary.sh
-
-      - name: Clean up local Docker images
-        if: ${{ always() }}
-        run: docker rmi kreuzberg-publish:${{ matrix.variant }}-test || true
-
   upload-cli-release:
     name: Upload CLI binaries to GitHub Release
     needs: [prepare, validate-versions, check-cli, cli-binaries]
@@ -2712,7 +2578,6 @@ jobs:
       - publish-nuget
       - publish-php
       - publish-homebrew
-      - publish-docker
       - upload-cli-release
       - upload-csharp-release
       - upload-go-release
@@ -2751,7 +2616,6 @@ jobs:
           RESULT_PUBLISH_NUGET: ${{ needs.publish-nuget.result }}
           RESULT_PUBLISH_PHP: ${{ needs.publish-php.result }}
           RESULT_PUBLISH_HOMEBREW: ${{ needs.publish-homebrew.result }}
-          RESULT_PUBLISH_DOCKER: ${{ needs.publish-docker.result }}
           RESULT_UPLOAD_CLI_RELEASE: ${{ needs.upload-cli-release.result }}
           RESULT_UPLOAD_CSHARP_RELEASE: ${{ needs.upload-csharp-release.result }}
           RESULT_UPLOAD_GO_RELEASE: ${{ needs.upload-go-release.result }}
