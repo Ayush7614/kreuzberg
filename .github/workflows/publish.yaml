@@ -1053,6 +1053,14 @@ jobs:
         shell: bash
         run: scripts/ci/ruby/vendor-kreuzberg-core.sh
 
+      - name: Ensure Ruby bundle config (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        working-directory: packages/ruby
+        run: |
+          bundle config set --local path vendor/bundle
+          bundle check || bundle install
+
       - name: Build gem (Unix)
         if: runner.os != 'Windows'
         shell: bash
@@ -1066,6 +1074,14 @@ jobs:
           echo "=== Disk space after gem build ===" >&2
           df -h / >&2
           du -sh packages/ruby/pkg/ >&2
+
+      - name: Ensure Ruby bundle config (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cd packages/ruby
+          ridk exec bundle config set --local path vendor/bundle
+          ridk exec bundle check; if ($LASTEXITCODE -ne 0) { ridk exec bundle install }
 
       - name: Build gem (Windows)
         if: runner.os == 'Windows'
@@ -1459,6 +1475,9 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Download Java native artifacts
         uses: actions/download-artifact@v7
         with:
@@ -1627,6 +1646,9 @@ jobs:
 
       - name: Ensure dotnet is available
         run: scripts/publish/csharp/ensure-dotnet.sh
+
+      - name: Install Task
+        uses: ./.github/actions/install-task
 
       - name: Download native assets
         uses: actions/download-artifact@v7

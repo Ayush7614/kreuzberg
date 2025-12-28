@@ -225,9 +225,7 @@ jobs:
           platform: ${{ matrix.platform }}
           task-command: node:build:ci
           cache-paths: |
-            crates/kreuzberg-node/npm/
-            crates/kreuzberg-node/*.node
-            crates/kreuzberg-node/dist/
+            crates/kreuzberg-node/
           cache-version: v1
           rust-hash: "n/a"
           binding-files: |

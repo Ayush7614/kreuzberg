@@ -64,13 +64,15 @@ done
 bottle_block+=$'\n'"  end"
 
 new_formula=$(echo "$formula_content" | sed \
-	-e "s/url \"https:\/\/github.com\/kreuzberg-dev\/kreuzberg\/archive\/.*\.tar\.gz\"/url \"https:\/\/github.com\/kreuzberg-dev\/kreuzberg\/archive\/$tag.tar.gz\"/" \
+	-e "s|url \"https://github.com/kreuzberg-dev/kreuzberg/archive/.*\.tar\.gz\"|url \"https://github.com/kreuzberg-dev/kreuzberg/archive/$tag.tar.gz\"|" \
 	-e "s/version \"[^\"]*\"/version \"$version\"/")
 
 new_formula=$(echo "$new_formula" | sed '/# bottle do/,/# end/d')
 
+# Escape forward slashes in bottle_block for sed
+escaped_bottle_block=$(echo "$bottle_block" | sed 's/\//\\\//g')
 new_formula=$(echo "$new_formula" | sed "/^  depends_on/i\\
-$bottle_block
+$escaped_bottle_block
 ")
 
 echo "$new_formula" >"$formula_path"

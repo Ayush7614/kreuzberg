@@ -153,8 +153,7 @@ runs:
           ffi-${{ inputs.ffi-crate }}-${{ inputs.platform }}-rust-
           ffi-${{ inputs.ffi-crate }}-${{ inputs.platform }}-
         cache-paths: |
-          target/release/libkreuzberg_ffi.*
-          target/release/kreuzberg_ffi.*
+          target/release/
           kreuzberg-ffi.pc
         operation: restore
 
@@ -241,10 +240,8 @@ runs:
 
         echo "=== Validating FFI Artifacts ==="
 
-        # Run validation script with quoted patterns to allow proper expansion
-        scripts/ci/cache/validate-cache.sh ffi \
-          "target/release/libkreuzberg_ffi.*" \
-          "target/release/kreuzberg_ffi.*" || {
+        # Run validation script with directory path
+        scripts/ci/cache/validate-cache.sh ffi target/release/ || {
           echo "❌ Validation failed"
           exit 1
         }
@@ -259,8 +256,7 @@ runs:
         binding-name: ${{ inputs.ffi-crate }}
         cache-key: ${{ steps.generate-cache-key.outputs.cache-key }}
         cache-paths: |
-          target/release/libkreuzberg_ffi.*
-          target/release/kreuzberg_ffi.*
+          target/release/
           kreuzberg-ffi.pc
         operation: save
 
