@@ -54,6 +54,7 @@ env:
   CARGO_TARGET_DIR: target
   CARGO_LOG: cargo::core::compiler::fingerprint=info
   BUILD_PROFILE: "ci"
+  KREUZBERG_BUILD: "1"
 
 jobs:
   build-and-test:
@@ -88,6 +89,8 @@ jobs:
 
       - name: Setup Elixir
         uses: erlef/setup-elixir@v1
+        env:
+          ImageOS: ${{ runner.os == 'Windows' && 'win22' || '' }}
         with:
           elixir-version: "1.17"
           otp-version: "27.2"

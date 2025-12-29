@@ -245,7 +245,7 @@ defmodule Kreuzberg.Unit.TablesTest do
       pdf_bytes = get_test_pdf_bytes("tables.pdf")
       {:ok, result} = Kreuzberg.extract(pdf_bytes, "application/pdf", config)
 
-      if (result.tables && result.tables != []) and length(result.tables) > 1 do
+      if result.tables && result.tables != [] and length(result.tables) > 1 do
         # Multiple tables should be separate entries in the list
         tables = result.tables
         assert tables != []
