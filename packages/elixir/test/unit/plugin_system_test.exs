@@ -608,7 +608,9 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
   describe "post-processor registration" do
     @tag :unit
     test "registers a post-processor successfully" do
-      assert :ok = Kreuzberg.Plugin.register_post_processor(:early_processor, TestPostProcessorEarly)
+      assert :ok =
+               Kreuzberg.Plugin.register_post_processor(:early_processor, TestPostProcessorEarly)
+
       {:ok, processors} = Kreuzberg.Plugin.list_post_processors()
       assert Enum.any?(processors, fn {name, _mod} -> name == :early_processor end)
     end
@@ -1322,13 +1324,16 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
       # Find backends supporting each language
       backends_en = [TestOcrBackendEnglish, TestOcrBackendMultilingual]
+
       for backend <- backends_en do
         assert "eng" in backend.supported_languages()
       end
 
       backends_chi = [TestOcrBackendChinese, TestOcrBackendMultilingual]
+
       for backend <- backends_chi do
-        assert "chi" in backend.supported_languages() or "chi_tra" in backend.supported_languages()
+        assert "chi" in backend.supported_languages() or
+                 "chi_tra" in backend.supported_languages()
       end
     end
 
@@ -1480,10 +1485,10 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "all validators have required metadata" do
       for module <- [
-        TestValidatorCritical,
-        TestValidatorNormal,
-        TestValidatorLowPriority
-      ] do
+            TestValidatorCritical,
+            TestValidatorNormal,
+            TestValidatorLowPriority
+          ] do
         assert is_binary(module.name())
         assert is_binary(module.version())
         assert is_integer(module.priority())
@@ -1493,10 +1498,10 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "all OCR backends have required metadata" do
       for module <- [
-        TestOcrBackendEnglish,
-        TestOcrBackendMultilingual,
-        TestOcrBackendChinese
-      ] do
+            TestOcrBackendEnglish,
+            TestOcrBackendMultilingual,
+            TestOcrBackendChinese
+          ] do
         assert is_binary(module.name())
         assert is_binary(module.version())
         assert is_list(module.supported_languages())
@@ -1630,6 +1635,7 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
         content: "test",
         mime_type: "text/plain"
       }
+
       # Processors should handle this gracefully
       assert is_struct(result, Kreuzberg.ExtractionResult)
     end
@@ -1638,7 +1644,9 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     test "processor returns {:ok, data}" do
       result = %{"content" => "test", "mime_type" => "text/plain"}
       processed = TestPostProcessorReturnsOk.process(result, nil)
-      assert processed == {:ok, %{"content" => "test", "mime_type" => "text/plain", "returns_ok" => true}}
+
+      assert processed ==
+               {:ok, %{"content" => "test", "mime_type" => "text/plain", "returns_ok" => true}}
     end
 
     @tag :unit
@@ -2046,7 +2054,11 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     test "final validator stage handles ExtractionResult struct" do
       # Final validators should work with ExtractionResult structures too
       # This validator requires "processed_by_late" to be true
-      result = %{"content" => "test content", "mime_type" => "text/plain", "processed_by_late" => true}
+      result = %{
+        "content" => "test content",
+        "mime_type" => "text/plain",
+        "processed_by_late" => true
+      }
 
       validation = TestFinalValidatorFailure.validate(result)
       assert validation == :ok
@@ -2236,9 +2248,12 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "returns validators sorted by priority descending" do
       Kreuzberg.Plugin.Registry.clear_validators()
-      Kreuzberg.Plugin.Registry.register_validator(TestValidatorCritical)      # priority: 100
-      Kreuzberg.Plugin.Registry.register_validator(TestValidatorNormal)        # priority: 50
-      Kreuzberg.Plugin.Registry.register_validator(TestValidatorLowPriority)   # priority: -10
+      # priority: 100
+      Kreuzberg.Plugin.Registry.register_validator(TestValidatorCritical)
+      # priority: 50
+      Kreuzberg.Plugin.Registry.register_validator(TestValidatorNormal)
+      # priority: -10
+      Kreuzberg.Plugin.Registry.register_validator(TestValidatorLowPriority)
 
       validators = Kreuzberg.Plugin.Registry.get_validators_by_priority()
 

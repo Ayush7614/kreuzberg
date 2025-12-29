@@ -392,15 +392,16 @@ defmodule KreuzbergTest.Unit.ErrorTest do
 
   describe "edge cases and error handling" do
     test "handles error with all possible fields populated" do
-      error = Error.new(
-        "Comprehensive error message",
-        :extraction_error,
-        %{
-          "file" => "test.pdf",
-          "size" => 1024,
-          "error_details" => %{"code" => 500}
-        }
-      )
+      error =
+        Error.new(
+          "Comprehensive error message",
+          :extraction_error,
+          %{
+            "file" => "test.pdf",
+            "size" => 1024,
+            "error_details" => %{"code" => 500}
+          }
+        )
 
       assert error.message == "Comprehensive error message"
       assert error.reason == :extraction_error

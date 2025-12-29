@@ -283,7 +283,8 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
     @tag :unit
     test "batch_extract_bytes handles mismatched list lengths" do
       data_list = ["Content 1", "Content 2", "Content 3"]
-      mime_types = ["text/plain", "text/plain"]  # Only 2 MIME types for 3 inputs
+      # Only 2 MIME types for 3 inputs
+      mime_types = ["text/plain", "text/plain"]
 
       {:error, reason} = BatchAPI.batch_extract_bytes(data_list, mime_types)
       assert reason =~ "Mismatch"
@@ -380,7 +381,8 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
 
       assert is_list(results)
       assert length(results) == 2
-      refute match?({:ok, _}, results)  # Should return list directly, not tuple
+      # Should return list directly, not tuple
+      refute match?({:ok, _}, results)
     end
 
     @tag :unit

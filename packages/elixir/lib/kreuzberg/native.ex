@@ -29,15 +29,21 @@ defmodule Kreuzberg.Native do
 
   # File extraction
   def extract_file(_file_path, _input_type), do: :erlang.nif_error(:nif_not_loaded)
-  def extract_file_with_options(_file_path, _input_type, _options), do: :erlang.nif_error(:nif_not_loaded)
+
+  def extract_file_with_options(_file_path, _input_type, _options),
+    do: :erlang.nif_error(:nif_not_loaded)
 
   # Batch extraction
   def batch_extract_files(_file_paths, _input_type), do: :erlang.nif_error(:nif_not_loaded)
-  def batch_extract_files_with_options(_file_paths, _input_type, _options), do: :erlang.nif_error(:nif_not_loaded)
+
+  def batch_extract_files_with_options(_file_paths, _input_type, _options),
+    do: :erlang.nif_error(:nif_not_loaded)
 
   # Batch extraction from bytes
   def batch_extract_bytes(_bytes_list, _input_type), do: :erlang.nif_error(:nif_not_loaded)
-  def batch_extract_bytes_with_options(_bytes_list, _input_type, _options), do: :erlang.nif_error(:nif_not_loaded)
+
+  def batch_extract_bytes_with_options(_bytes_list, _input_type, _options),
+    do: :erlang.nif_error(:nif_not_loaded)
 
   # Cache operations
   def cache_stats, do: :erlang.nif_error(:nif_not_loaded)

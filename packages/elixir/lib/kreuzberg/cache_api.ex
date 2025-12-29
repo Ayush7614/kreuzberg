@@ -141,8 +141,11 @@ defmodule Kreuzberg.CacheAPI do
   @spec cache_stats!() :: map()
   def cache_stats! do
     case cache_stats() do
-      {:ok, stats} -> stats
-      {:error, reason} -> raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      {:ok, stats} ->
+        stats
+
+      {:error, reason} ->
+        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 
@@ -190,8 +193,11 @@ defmodule Kreuzberg.CacheAPI do
   @spec clear_cache!() :: :ok
   def clear_cache! do
     case clear_cache() do
-      :ok -> :ok
-      {:error, reason} -> raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 end

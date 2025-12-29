@@ -134,7 +134,7 @@ for path in "$@"; do
 						warn "Invalid WASM format: $artifact"
 						((INVALID_COUNT++))
 					fi
-				done <<<"$wasm_files"
+				done < <(echo "$wasm_files")
 			fi
 		# For Node artifacts, look for .node files recursively in the directory
 		elif [[ "$ARTIFACT_TYPE" == "node" ]]; then
@@ -165,7 +165,7 @@ for path in "$@"; do
 						warn "Invalid .node format: $artifact"
 						((INVALID_COUNT++))
 					fi
-				done <<<"$node_files"
+				done < <(echo "$node_files")
 			fi
 		# For FFI artifacts, look for library files recursively in the directory
 		elif [[ "$ARTIFACT_TYPE" == "ffi" ]]; then
@@ -196,7 +196,7 @@ for path in "$@"; do
 						warn "Invalid FFI library format: $artifact"
 						((INVALID_COUNT++))
 					fi
-				done <<<"$ffi_files"
+				done < <(echo "$ffi_files")
 			fi
 		else
 			# For other types, just check that the directory exists

@@ -207,12 +207,13 @@ defmodule KreuzbergTest do
     end
 
     test "validator failure aborts extraction" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        validators: [ValidatorThatFails]
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          validators: [ValidatorThatFails]
+        )
 
       assert {:error, error_msg} = result
       assert error_msg =~ "Validator"
@@ -220,12 +221,13 @@ defmodule KreuzbergTest do
     end
 
     test "validator exception is caught and returned as error" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        validators: [ValidatorThatRaisesException]
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          validators: [ValidatorThatRaisesException]
+        )
 
       assert {:error, error_msg} = result
       assert error_msg =~ "raised exception"
@@ -233,12 +235,13 @@ defmodule KreuzbergTest do
 
     test "post-processor failure stops pipeline" do
       # This will succeed extraction but fail in post-processing
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        post_processors: %{early: [PostProcessorThatFails]}
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          post_processors: %{early: [PostProcessorThatFails]}
+        )
 
       assert {:error, error_msg} = result
       assert error_msg =~ "PostProcessor"
@@ -246,24 +249,26 @@ defmodule KreuzbergTest do
     end
 
     test "post-processor exception is caught and returned as error" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        post_processors: %{middle: [PostProcessorThatRaisesException]}
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          post_processors: %{middle: [PostProcessorThatRaisesException]}
+        )
 
       assert {:error, error_msg} = result
       assert error_msg =~ "raised exception"
     end
 
     test "final validator failure after successful processing" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        final_validators: [FinalValidatorThatFails]
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          final_validators: [FinalValidatorThatFails]
+        )
 
       assert {:error, error_msg} = result
       assert error_msg =~ "Final validator"
@@ -271,12 +276,13 @@ defmodule KreuzbergTest do
     end
 
     test "final validator exception is caught and returned as error" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        final_validators: [FinalValidatorThatRaisesException]
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          final_validators: [FinalValidatorThatRaisesException]
+        )
 
       assert {:error, error_msg} = result
       assert error_msg =~ "raised exception"
@@ -284,114 +290,125 @@ defmodule KreuzbergTest do
 
     test "extraction error is propagated when validators pass" do
       # Use invalid MIME type to cause extraction to fail
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "invalid/mime-type",
-        nil,
-        validators: []
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "invalid/mime-type",
+          nil,
+          validators: []
+        )
 
       assert {:error, _error_msg} = result
     end
 
     test "with all stages - validator failure short-circuits" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        validators: [ValidatorThatFails],
-        post_processors: %{early: [], middle: [], late: []},
-        final_validators: []
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          validators: [ValidatorThatFails],
+          post_processors: %{early: [], middle: [], late: []},
+          final_validators: []
+        )
 
       assert {:error, error_msg} = result
       assert error_msg =~ "Validator"
     end
 
     test "empty validators list passes validation stage" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        validators: []
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          validators: []
+        )
 
       assert {:ok, _extraction_result} = result
     end
 
     test "empty post_processors map passes processing stage" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        post_processors: %{}
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          post_processors: %{}
+        )
 
       assert {:ok, _extraction_result} = result
     end
 
     test "empty final_validators list passes final validation" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        final_validators: []
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          final_validators: []
+        )
 
       assert {:ok, _extraction_result} = result
     end
 
     test "no plugin_opts provided works correctly" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        []
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          []
+        )
 
       assert {:ok, _extraction_result} = result
     end
 
     test "default plugin_opts works correctly" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain"
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain"
+        )
 
       assert {:ok, _extraction_result} = result
     end
 
     test "with config and no plugins" do
       config = %Kreuzberg.ExtractionConfig{}
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        config,
-        []
-      )
+
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          config,
+          []
+        )
 
       assert {:ok, _extraction_result} = result
     end
 
     test "post_processors as non-map is handled" do
       # When post_processors is not a map, it should be handled gracefully
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        post_processors: []
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          post_processors: []
+        )
 
       assert {:ok, _extraction_result} = result
     end
 
     test "post_processors with empty stage processors" do
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        post_processors: %{early: [], middle: [], late: []}
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          post_processors: %{early: [], middle: [], late: []}
+        )
 
       assert {:ok, _extraction_result} = result
     end
@@ -408,12 +425,13 @@ defmodule KreuzbergTest do
         def process(result, _config), do: result
       end
 
-      result = Kreuzberg.extract_with_plugins(
-        "test content",
-        "text/plain",
-        nil,
-        post_processors: %{early: [PostProcessorThatFails, ProcessorSuccess]}
-      )
+      result =
+        Kreuzberg.extract_with_plugins(
+          "test content",
+          "text/plain",
+          nil,
+          post_processors: %{early: [PostProcessorThatFails, ProcessorSuccess]}
+        )
 
       assert {:error, error_msg} = result
       assert error_msg =~ "PostProcessor"
@@ -537,6 +555,7 @@ defmodule KreuzbergTest do
         "max_chars" => 1000,
         "max_overlap" => 100
       }
+
       result = Kreuzberg.validate_chunking_params(params)
       assert result == :ok
     end

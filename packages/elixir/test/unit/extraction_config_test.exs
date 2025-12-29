@@ -636,7 +636,9 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
 
       Enum.each(configs, fn {config, expected_type} ->
         {:error, reason} = ExtractionConfig.validate(config)
-        assert String.contains?(reason, expected_type), "Error should mention #{expected_type}: #{reason}"
+
+        assert String.contains?(reason, expected_type),
+               "Error should mention #{expected_type}: #{reason}"
       end)
     end
 

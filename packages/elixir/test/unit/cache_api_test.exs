@@ -479,9 +479,10 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "clear_cache and clear_cache! always match" do
-      pairs = Enum.map(1..5, fn _i ->
-        {CacheAPI.clear_cache(), CacheAPI.clear_cache!()}
-      end)
+      pairs =
+        Enum.map(1..5, fn _i ->
+          {CacheAPI.clear_cache(), CacheAPI.clear_cache!()}
+        end)
 
       Enum.each(pairs, fn {r1, r2} ->
         assert r1 == :ok
@@ -609,6 +610,7 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
       # Run multiple times to ensure consistency
       Enum.each(1..5, fn _i ->
         {:ok, stats} = CacheAPI.cache_stats()
+
         Enum.each(stats, fn {key, _value} ->
           assert is_binary(key), "Key should be string"
         end)
@@ -682,6 +684,7 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
     test "cache_stats error passthrough" do
       # When Native.cache_stats returns error, it passes through unchanged
       result = CacheAPI.cache_stats()
+
       case result do
         {:ok, _map} -> assert true
         {:error, _reason} -> assert true

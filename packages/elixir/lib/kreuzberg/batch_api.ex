@@ -72,8 +72,11 @@ defmodule Kreuzberg.BatchAPI do
         ) :: [ExtractionResult.t()]
   def batch_extract_files!(paths, mime_type \\ nil, config \\ nil) do
     case batch_extract_files(paths, mime_type, config) do
-      {:ok, results} -> results
-      {:error, reason} -> raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      {:ok, results} ->
+        results
+
+      {:error, reason} ->
+        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 
@@ -146,8 +149,11 @@ defmodule Kreuzberg.BatchAPI do
         ) :: [ExtractionResult.t()]
   def batch_extract_bytes!(data_list, mime_types, config \\ nil) do
     case batch_extract_bytes(data_list, mime_types, config) do
-      {:ok, results} -> results
-      {:error, reason} -> raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      {:ok, results} ->
+        results
+
+      {:error, reason} ->
+        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 
@@ -200,7 +206,9 @@ defmodule Kreuzberg.BatchAPI do
   defp call_native_batch_bytes(data_list, mime_types, config) do
     Helpers.call_native(
       fn -> Native.batch_extract_bytes(data_list, mime_types) end,
-      fn config_map -> Native.batch_extract_bytes_with_options(data_list, mime_types, config_map) end,
+      fn config_map ->
+        Native.batch_extract_bytes_with_options(data_list, mime_types, config_map)
+      end,
       config
     )
   end

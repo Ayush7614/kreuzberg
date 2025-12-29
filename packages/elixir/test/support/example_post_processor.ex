@@ -65,13 +65,14 @@ defmodule Kreuzberg.Test.ExamplePostProcessor do
   # Private helpers
 
   defp normalize_content(result, _config) do
-    content = result.content
-    # Convert to lowercase
-    |> String.downcase()
-    # Trim leading/trailing whitespace
-    |> String.trim()
-    # Replace multiple spaces with single space
-    |> normalize_whitespace()
+    content =
+      result.content
+      # Convert to lowercase
+      |> String.downcase()
+      # Trim leading/trailing whitespace
+      |> String.trim()
+      # Replace multiple spaces with single space
+      |> normalize_whitespace()
 
     %{result | content: content}
   end

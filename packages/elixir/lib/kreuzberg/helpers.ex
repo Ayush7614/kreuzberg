@@ -150,9 +150,8 @@ defmodule Kreuzberg.Helpers do
       iex> Kreuzberg.Helpers.validate_config(extract_images: true)
       {:ok, [extract_images: true]}
   """
-  @spec validate_config(
-          nil | ExtractionConfig.t() | map() | keyword()
-        ) :: {:ok, nil | ExtractionConfig.t() | map() | keyword()} | {:error, String.t()}
+  @spec validate_config(nil | ExtractionConfig.t() | map() | keyword()) ::
+          {:ok, nil | ExtractionConfig.t() | map() | keyword()} | {:error, String.t()}
   def validate_config(nil), do: {:ok, nil}
 
   def validate_config(%ExtractionConfig{} = cfg) do

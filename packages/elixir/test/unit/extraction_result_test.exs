@@ -163,9 +163,10 @@ defmodule KreuzbergTest.Unit.ExtractionResultTest do
     end
 
     test "handles large number of tables" do
-      tables = Enum.map(1..100, fn i ->
-        %{"id" => i, "headers" => ["Col#{i}"]}
-      end)
+      tables =
+        Enum.map(1..100, fn i ->
+          %{"id" => i, "headers" => ["Col#{i}"]}
+        end)
 
       result = ExtractionResult.new("content", "text/plain", %{}, tables)
 
@@ -388,17 +389,19 @@ defmodule KreuzbergTest.Unit.ExtractionResultTest do
     end
 
     test "concurrent result creation doesn't interfere" do
-      tasks = Enum.map(1..10, fn i ->
-        Task.async(fn ->
-          ExtractionResult.new("content#{i}", "text/plain")
+      tasks =
+        Enum.map(1..10, fn i ->
+          Task.async(fn ->
+            ExtractionResult.new("content#{i}", "text/plain")
+          end)
         end)
-      end)
 
       results = Task.await_many(tasks)
 
       assert length(results) == 10
       contents = Enum.map(results, & &1.content)
-      assert Enum.uniq(contents) == contents  # All unique
+      # All unique
+      assert Enum.uniq(contents) == contents
     end
   end
 end

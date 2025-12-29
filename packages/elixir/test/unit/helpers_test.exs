@@ -463,9 +463,10 @@ defmodule KreuzbergTest.Unit.HelpersTest do
     end
 
     test "handles large maps with many keys" do
-      input = Enum.reduce(1..1000, %{}, fn i, acc ->
-        Map.put(acc, String.to_atom("key#{i}"), "value#{i}")
-      end)
+      input =
+        Enum.reduce(1..1000, %{}, fn i, acc ->
+          Map.put(acc, String.to_atom("key#{i}"), "value#{i}")
+        end)
 
       result = Helpers.normalize_map_keys(input)
 

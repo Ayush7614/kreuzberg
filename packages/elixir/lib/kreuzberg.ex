@@ -317,7 +317,8 @@ defmodule Kreuzberg do
          {:ok, result} <- extract(input, mime_type, config),
          {:ok, processed_result} <-
            apply_post_processors(result, Keyword.get(plugin_opts, :post_processors, %{})),
-         :ok <- run_final_validators(Keyword.get(plugin_opts, :final_validators, []), processed_result) do
+         :ok <-
+           run_final_validators(Keyword.get(plugin_opts, :final_validators, []), processed_result) do
       {:ok, processed_result}
     else
       {:error, reason} -> {:error, reason}
@@ -362,9 +363,14 @@ defmodule Kreuzberg do
     Enum.reduce_while(processors, {:ok, result}, fn processor_module, {:ok, current_data} ->
       try do
         case processor_module.process(current_data, nil) do
-          {:ok, processed} -> {:cont, {:ok, processed}}
-          processed when is_struct(processed, ExtractionResult) -> {:cont, {:ok, processed}}
-          {:error, reason} -> {:halt, {:error, "PostProcessor #{processor_module} failed: #{reason}"}}
+          {:ok, processed} ->
+            {:cont, {:ok, processed}}
+
+          processed when is_struct(processed, ExtractionResult) ->
+            {:cont, {:ok, processed}}
+
+          {:error, reason} ->
+            {:halt, {:error, "PostProcessor #{processor_module} failed: #{reason}"}}
         end
       rescue
         exception ->
@@ -380,7 +386,9 @@ defmodule Kreuzberg do
     Enum.reduce_while(validators, :ok, fn validator_module, _acc ->
       try do
         case validator_module.validate(result) do
-          :ok -> {:cont, :ok}
+          :ok ->
+            {:cont, :ok}
+
           {:error, reason} ->
             {:halt, {:error, "Final validator #{validator_module} failed: #{reason}"}}
         end
