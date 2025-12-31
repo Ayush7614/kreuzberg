@@ -86,38 +86,35 @@ defmodule Kreuzberg.Plugin.Registry do
       ) do
     server = server || __MODULE__
 
-    case parse_post_processor_params(name_or_module, config_or_module, stage) do
-      {:ok, name, module, config, stage} ->
-        with :ok <- validate_module(module) do
-          # Extract metadata from module if available
-          module_name =
-            if function_exported?(module, :name, 0),
-              do: module.name(),
-              else: module_to_name(module)
+    {:ok, name, module, config, stage} =
+      parse_post_processor_params(name_or_module, config_or_module, stage)
 
-          module_version =
-            if function_exported?(module, :version, 0), do: module.version(), else: "1.0.0"
+    with :ok <- validate_module(module) do
+      # Extract metadata from module if available
+      module_name =
+        if function_exported?(module, :name, 0),
+          do: module.name(),
+          else: module_to_name(module)
 
-          module_stage =
-            if function_exported?(module, :processing_stage, 0),
-              do: module.processing_stage(),
-              else: stage
+      module_version =
+        if function_exported?(module, :version, 0), do: module.version(), else: "1.0.0"
 
-          GenServer.call(server, {
-            :register_post_processor,
-            name,
-            %{
-              module: module,
-              config: config,
-              stage: module_stage,
-              name: module_name,
-              version: module_version
-            }
-          })
-        end
+      module_stage =
+        if function_exported?(module, :processing_stage, 0),
+          do: module.processing_stage(),
+          else: stage
 
-      {:error, reason} ->
-        {:error, reason}
+      GenServer.call(server, {
+        :register_post_processor,
+        name,
+        %{
+          module: module,
+          config: config,
+          stage: module_stage,
+          name: module_name,
+          version: module_version
+        }
+      })
     end
   end
 

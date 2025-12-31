@@ -41,8 +41,12 @@ defmodule Kreuzberg.BatchAPI do
           String.t() | nil,
           ExtractionConfig.t() | map() | keyword() | nil
         ) :: {:ok, [ExtractionResult.t()]} | {:error, String.t()}
+
+  # Default value header
+  def batch_extract_files(paths, config_or_mime, third_arg \\ nil)
+
   # Handle case where second arg is a config (struct/map/keyword) not a mime_type
-  def batch_extract_files(paths, config, third_arg \\ nil)
+  def batch_extract_files(paths, config, third_arg)
       when is_list(paths) and
              (is_map(config) or is_list(config)) and
              not is_binary(config) and
@@ -80,8 +84,12 @@ defmodule Kreuzberg.BatchAPI do
           String.t() | nil,
           ExtractionConfig.t() | map() | keyword() | nil
         ) :: [ExtractionResult.t()]
+
+  # Default value header
+  def batch_extract_files!(paths, config_or_mime, third_arg \\ nil)
+
   # Handle case where second arg is a config (struct/map/keyword) not a mime_type
-  def batch_extract_files!(paths, config, third_arg \\ nil)
+  def batch_extract_files!(paths, config, third_arg)
       when is_list(paths) and
              (is_map(config) or is_list(config)) and
              not is_binary(config) and

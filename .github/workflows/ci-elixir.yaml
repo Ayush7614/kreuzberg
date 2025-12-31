@@ -164,11 +164,14 @@ jobs:
         working-directory: packages/elixir
         env:
           MIX_ENV: test
+          KREUZBERG_BUILD: "1"
         run: mix compile --warnings-as-errors
 
       - name: Run Elixir tests
         shell: bash
         working-directory: packages/elixir
+        env:
+          KREUZBERG_BUILD: "1"
         run: mix test
 
       - name: Report FFI cache statistics
