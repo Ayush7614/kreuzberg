@@ -13,6 +13,7 @@ use std::path::PathBuf;
 
 /// Get the path to a script in the scripts directory
 fn get_script_path(script_name: &str) -> Result<PathBuf> {
+    // Try CARGO_MANIFEST_DIR first (development builds)
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let script_path = PathBuf::from(manifest_dir).join("scripts").join(script_name);
         if script_path.exists() {
@@ -20,9 +21,18 @@ fn get_script_path(script_name: &str) -> Result<PathBuf> {
         }
     }
 
+    // Try relative path from current directory (common case)
     let script_path = PathBuf::from("tools/benchmark-harness/scripts").join(script_name);
     if script_path.exists() {
         return Ok(script_path);
+    }
+
+    // Try using workspace_root() for absolute path resolution (CI/production builds)
+    if let Ok(root) = workspace_root() {
+        let script_path = root.join("tools/benchmark-harness/scripts").join(script_name);
+        if script_path.exists() {
+            return Ok(script_path);
+        }
     }
 
     Err(crate::Error::Config(format!("Script not found: {}", script_name)))

@@ -49,8 +49,8 @@ function fixTypeExports(filePath) {
 		if (!filePath.endsWith(".d.mts") && !filePath.endsWith(".d.cts")) {
 			importModuleRef = moduleRef.replace(/\.js$/, ".d.ts");
 		}
-		const correctedImport = `import { E as ExtractionConfig, a as ExtractionResult } from '${importModuleRef}';`;
-		const correctedExport = `export { C as Chunk, b as ChunkingConfig, c as ChunkMetadata, d as ExtractedImage, I as ImageExtractionConfig, L as LanguageDetectionConfig, M as Metadata, O as OcrBackendProtocol, e as OcrConfig, P as PageContent, f as PageExtractionConfig, g as PdfConfig, h as PostProcessorConfig, T as Table, i as TesseractConfig, j as TokenReductionConfig, E as ExtractionConfig, a as ExtractionResult } from '${importModuleRef}';`;
+		const correctedImport = `import { a as ExtractionConfig, E as ExtractionResult } from '${importModuleRef}';`;
+		const correctedExport = `export { C as Chunk, b as ChunkingConfig, c as ChunkMetadata, d as ExtractedImage, I as ImageExtractionConfig, L as LanguageDetectionConfig, M as Metadata, O as OcrBackendProtocol, e as OcrConfig, P as PageContent, f as PageExtractionConfig, g as PdfConfig, h as PostProcessorConfig, T as Table, i as TesseractConfig, j as TokenReductionConfig, a as ExtractionConfig, E as ExtractionResult } from '${importModuleRef}';`;
 
 		const lines = content.split("\n");
 		let replaced = false;

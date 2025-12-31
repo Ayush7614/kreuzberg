@@ -256,8 +256,37 @@ async fn main() -> Result<()> {
 
             let mut registry = AdapterRegistry::new();
 
-            registry.register(Arc::new(NativeAdapter::with_config(extraction_config)))?;
-            eprintln!("[adapter] ✓ kreuzberg-native (registered)");
+            // Helper to check if a framework should be initialized
+            // When specific frameworks are requested, only initialize those
+            // When no frameworks are specified (empty list), initialize all available
+            let should_init = |name: &str| -> bool { frameworks.is_empty() || frameworks.iter().any(|f| f == name) };
+
+            // Helper macro for registering adapters conditionally
+            macro_rules! try_register {
+                ($name:expr, $create_fn:expr, $count:expr) => {
+                    if should_init($name) {
+                        match $create_fn() {
+                            Ok(adapter) => {
+                                if let Err(err) = registry.register(Arc::new(adapter)) {
+                                    eprintln!("[adapter] ✗ {} (registration failed: {})", $name, err);
+                                } else {
+                                    eprintln!("[adapter] ✓ {} (registered)", $name);
+                                    $count += 1;
+                                }
+                            }
+                            Err(err) => eprintln!("[adapter] ✗ {} (initialization failed: {})", $name, err),
+                        }
+                    }
+                };
+            }
+
+            // Always register native adapter if requested or no specific frameworks specified
+            let mut kreuzberg_count = 0;
+            if should_init("kreuzberg-native") {
+                registry.register(Arc::new(NativeAdapter::with_config(extraction_config)))?;
+                eprintln!("[adapter] ✓ kreuzberg-native (registered)");
+                kreuzberg_count += 1;
+            }
 
             use benchmark_harness::adapters::{
                 create_csharp_sync_adapter, create_elixir_batch_adapter, create_elixir_sync_adapter,
@@ -268,210 +297,29 @@ async fn main() -> Result<()> {
                 create_wasm_batch_adapter,
             };
 
-            let mut kreuzberg_count = 1;
+            try_register!("kreuzberg-python-sync", create_python_sync_adapter, kreuzberg_count);
+            try_register!("kreuzberg-python-async", create_python_async_adapter, kreuzberg_count);
+            try_register!("kreuzberg-python-batch", create_python_batch_adapter, kreuzberg_count);
+            try_register!("kreuzberg-go-sync", create_go_sync_adapter, kreuzberg_count);
+            try_register!("kreuzberg-go-batch", create_go_batch_adapter, kreuzberg_count);
+            try_register!("kreuzberg-node-async", create_node_async_adapter, kreuzberg_count);
+            try_register!("kreuzberg-node-batch", create_node_batch_adapter, kreuzberg_count);
+            try_register!("kreuzberg-wasm-async", create_wasm_async_adapter, kreuzberg_count);
+            try_register!("kreuzberg-wasm-batch", create_wasm_batch_adapter, kreuzberg_count);
+            try_register!("kreuzberg-ruby-sync", create_ruby_sync_adapter, kreuzberg_count);
+            try_register!("kreuzberg-ruby-batch", create_ruby_batch_adapter, kreuzberg_count);
+            try_register!("kreuzberg-java-sync", create_java_sync_adapter, kreuzberg_count);
+            try_register!("kreuzberg-csharp-sync", create_csharp_sync_adapter, kreuzberg_count);
+            try_register!("kreuzberg-php-sync", create_php_sync_adapter, kreuzberg_count);
+            try_register!("kreuzberg-php-batch", create_php_batch_adapter, kreuzberg_count);
+            try_register!("kreuzberg-elixir-sync", create_elixir_sync_adapter, kreuzberg_count);
+            try_register!("kreuzberg-elixir-batch", create_elixir_batch_adapter, kreuzberg_count);
 
-            if let Ok(adapter) = create_python_sync_adapter() {
-                if let Ok(()) = registry.register(Arc::new(adapter)) {
-                    eprintln!("[adapter] ✓ kreuzberg-python-sync (registered)");
-                    kreuzberg_count += 1;
-                } else {
-                    eprintln!("[adapter] ✗ kreuzberg-python-sync (registration failed)");
-                }
-            } else {
-                eprintln!("[adapter] ✗ kreuzberg-python-sync (initialization failed)");
-            }
-
-            if let Ok(adapter) = create_python_async_adapter() {
-                if let Ok(()) = registry.register(Arc::new(adapter)) {
-                    eprintln!("[adapter] ✓ kreuzberg-python-async (registered)");
-                    kreuzberg_count += 1;
-                } else {
-                    eprintln!("[adapter] ✗ kreuzberg-python-async (registration failed)");
-                }
-            } else {
-                eprintln!("[adapter] ✗ kreuzberg-python-async (initialization failed)");
-            }
-
-            if let Ok(adapter) = create_python_batch_adapter() {
-                if let Ok(()) = registry.register(Arc::new(adapter)) {
-                    eprintln!("[adapter] ✓ kreuzberg-python-batch (registered)");
-                    kreuzberg_count += 1;
-                } else {
-                    eprintln!("[adapter] ✗ kreuzberg-python-batch (registration failed)");
-                }
-            } else {
-                eprintln!("[adapter] ✗ kreuzberg-python-batch (initialization failed)");
-            }
-
-            match create_go_sync_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-go-sync (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-go-sync (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-go-sync (initialization failed: {err})"),
-            }
-
-            match create_go_batch_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-go-batch (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-go-batch (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-go-batch (initialization failed: {err})"),
-            }
-
-            match create_node_async_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-node-async (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-node-async (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-node-async (initialization failed: {err})"),
-            }
-
-            match create_node_batch_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-node-batch (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-node-batch (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-node-batch (initialization failed: {err})"),
-            }
-
-            match create_wasm_async_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-wasm-async (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-wasm-async (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-wasm-async (initialization failed: {err})"),
-            }
-
-            match create_wasm_batch_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-wasm-batch (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-wasm-batch (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-wasm-batch (initialization failed: {err})"),
-            }
-
-            match create_ruby_sync_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-ruby-sync (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-ruby-sync (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-ruby-sync (initialization failed: {err})"),
-            }
-
-            match create_ruby_batch_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-ruby-batch (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-ruby-batch (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-ruby-batch (initialization failed: {err})"),
-            }
-
-            match create_java_sync_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-java-sync (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-java-sync (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-java-sync (initialization failed: {err})"),
-            }
-
-            match create_csharp_sync_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-csharp-sync (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-csharp-sync (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-csharp-sync (initialization failed: {err})"),
-            }
-
-            match create_php_sync_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-php-sync (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-php-sync (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-php-sync (initialization failed: {err})"),
-            }
-
-            match create_php_batch_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-php-batch (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-php-batch (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-php-batch (initialization failed: {err})"),
-            }
-
-            match create_elixir_sync_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-elixir-sync (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-elixir-sync (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-elixir-sync (initialization failed: {err})"),
-            }
-
-            match create_elixir_batch_adapter() {
-                Ok(adapter) => {
-                    if let Err(err) = registry.register(Arc::new(adapter)) {
-                        eprintln!("[adapter] ✗ kreuzberg-elixir-batch (registration failed: {err})");
-                    } else {
-                        eprintln!("[adapter] ✓ kreuzberg-elixir-batch (registered)");
-                        kreuzberg_count += 1;
-                    }
-                }
-                Err(err) => eprintln!("[adapter] ✗ kreuzberg-elixir-batch (initialization failed: {err})"),
-            }
-
-            eprintln!("[adapter] Kreuzberg bindings: {}/19 available", kreuzberg_count);
+            let total_requested = if frameworks.is_empty() { 18 } else { frameworks.len() };
+            eprintln!(
+                "[adapter] Kreuzberg bindings: {}/{} available",
+                kreuzberg_count, total_requested
+            );
 
             use benchmark_harness::adapters::external::{
                 create_docling_adapter, create_docling_batch_adapter, create_markitdown_adapter, create_mineru_adapter,

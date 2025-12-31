@@ -30,9 +30,20 @@ export default defineConfig({
 		"tesseract-wasm",
 		"fs",
 		"node:fs/promises",
+		"path",
+		"node:path",
+		"url",
+		"node:url",
+		"util",
+		"node:util",
+		// WASM module - keep external to avoid bundling Node.js fs dependency
+		// The wasm-pack generated module uses require('fs') which cannot be bundled
+		// for neutral platform targets
+		"../pkg/kreuzberg_wasm.js",
+		"./pkg/kreuzberg_wasm.js",
+		"./kreuzberg_wasm.js",
 		/\.wasm$/,
 		/@kreuzberg\/wasm-.*/,
-		/\.\.\/pkg\/.*/,
 		"./index.js",
 		"../index.js",
 	],

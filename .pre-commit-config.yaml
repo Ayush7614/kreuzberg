@@ -111,7 +111,7 @@ repos:
       # Full CGO linting is done in the dedicated Go CI workflow (ci-go.yaml).
       - id: golangci-lint
         name: Check Go linting (golangci-lint)
-        entry: bash -c 'cd packages/go/v4 && CGO_ENABLED=0 golangci-lint run --fix'
+        entry: bash -c 'cd packages/go/v4 && CGO_ENABLED=0 golangci-lint run --fix --tests=false'
         language: system
         files: ^packages/go/v4/.*\.go$
         pass_filenames: false

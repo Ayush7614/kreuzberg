@@ -2898,6 +2898,7 @@ fn get_extensions_for_mime_native(mime_type: String) -> Result<Vec<String>, Erro
     kreuzberg::get_extensions_for_mime(&mime_type).map_err(kreuzberg_error)
 }
 
+#[cfg(feature = "embeddings")]
 /// List all available embedding preset names.
 ///
 /// Returns an array of preset names that can be used with get_embedding_preset.
@@ -2923,6 +2924,7 @@ fn list_embedding_presets(ruby: &Ruby) -> Result<RArray, Error> {
     Ok(array)
 }
 
+#[cfg(feature = "embeddings")]
 /// Get a specific embedding preset by name.
 ///
 /// Returns a preset configuration hash, or nil if the preset name is not found.
@@ -3579,8 +3581,11 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     module.define_module_function("get_extensions_for_mime", function!(get_extensions_for_mime_native, 1))?;
     module.define_module_function("validate_mime_type", function!(validate_mime_type_native, 1))?;
 
-    module.define_module_function("list_embedding_presets", function!(list_embedding_presets, 0))?;
-    module.define_module_function("get_embedding_preset", function!(get_embedding_preset, 1))?;
+    #[cfg(feature = "embeddings")]
+    {
+        module.define_module_function("list_embedding_presets", function!(list_embedding_presets, 0))?;
+        module.define_module_function("get_embedding_preset", function!(get_embedding_preset, 1))?;
+    }
 
     module.define_module_function("_last_error_code_native", function!(last_error_code, 0))?;
     module.define_module_function("_last_panic_context_json_native", function!(last_panic_context_json, 0))?;

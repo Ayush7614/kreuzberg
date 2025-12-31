@@ -1,7 +1,8 @@
 go 1.25
 
 use (
+	./e2e/go
 	./packages/go/v4
 	./tests/test_apps/go
-	./e2e/go
+	./tools/benchmark-harness/scripts
 )

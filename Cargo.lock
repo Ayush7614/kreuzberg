@@ -3301,8 +3301,8 @@ dependencies = [
  "cmake",
  "image",
  "libc",
- "reqwest 0.13.0",
  "thiserror 2.0.17",
+ "ureq 2.12.1",
  "zip 7.0.0",
 ]
 
@@ -5871,9 +5871,7 @@ checksum = "2b11be62ac29861f5e3205a0941578e265c93fa566fd1c36cfdb20a16ae3efc5"
 dependencies = [
  "base64 0.22.1",
  "bytes",
- "futures-channel",
  "futures-core",
- "futures-util",
  "http",
  "http-body",
  "http-body-util",

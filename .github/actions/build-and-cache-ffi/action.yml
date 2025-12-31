@@ -243,7 +243,17 @@ runs:
 
         if [[ -f "$CARGO_TOML" ]] && grep -q '^\[lib\]' "$CARGO_TOML"; then
           # Extract custom library name from Cargo.toml if it exists
-          CUSTOM_LIB_NAME=$(awk '/^\[lib\]/,/^\[/ {if ($1 == "name") {gsub(/"/, "", $3); print $3}}' "$CARGO_TOML")
+          CUSTOM_LIB_NAME=$(awk '
+            /^\[lib\]/ { in_lib=1; next }
+            /^\[/ { in_lib=0 }
+            in_lib && /^name[[:space:]]*=/ {
+              gsub(/^name[[:space:]]*=[[:space:]]*/, "");
+              gsub(/"/, "");
+              gsub(/[[:space:]]*$/, "");
+              print;
+              exit
+            }
+          ' "$CARGO_TOML")
           if [[ -n "$CUSTOM_LIB_NAME" ]]; then
             LIB_NAME="$CUSTOM_LIB_NAME"
           else

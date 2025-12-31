@@ -7,6 +7,11 @@
 
 require Logger
 
+# Configure Logger to suppress debug messages and use stderr for all output
+# This ensures only the JSON result goes to stdout
+Logger.configure(level: :warning)
+Logger.configure_backend(:console, device: :standard_error)
+
 debug = System.get_env("KREUZBERG_BENCHMARK_DEBUG", "false") == "true"
 
 defmodule KreuzbergExtract do
@@ -21,6 +26,20 @@ defmodule KreuzbergExtract do
   end
 
   def debug_log(_), do: nil
+
+  @doc """
+  Convert a struct to a plain map for JSON encoding.
+  Handles nested structs and removes nil values.
+  """
+  def struct_to_map(nil), do: %{}
+  def struct_to_map(struct) when is_struct(struct) do
+    struct
+    |> Map.from_struct()
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.map(fn {k, v} -> {Atom.to_string(k), struct_to_map(v)} end)
+    |> Map.new()
+  end
+  def struct_to_map(value), do: value
 
   @doc """
   Extract a single file synchronously.
@@ -58,7 +77,7 @@ defmodule KreuzbergExtract do
 
         payload = %{
           "content" => extraction_result.content,
-          "metadata" => extraction_result.metadata || %{},
+          "metadata" => struct_to_map(extraction_result.metadata),
           "_extraction_time_ms" => duration_ms
         }
 
@@ -123,7 +142,7 @@ defmodule KreuzbergExtract do
 
             %{
               "content" => extraction_result.content,
-              "metadata" => extraction_result.metadata || %{},
+              "metadata" => struct_to_map(extraction_result.metadata),
               "_extraction_time_ms" => per_file_duration_ms,
               "_batch_total_ms" => total_duration_ms
             }
@@ -219,7 +238,7 @@ defmodule KreuzbergExtract do
 end
 
 # Start the application and run main
-:ok = Application.ensure_all_started(:kreuzberg)
+{:ok, _apps} = Application.ensure_all_started(:kreuzberg)
 
 # Parse args and run
 args = System.argv()

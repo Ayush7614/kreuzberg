@@ -574,27 +574,26 @@ mod build_tesseract {
     }
 
     fn download_and_extract(target_dir: &Path, url: &str, name: &str) -> PathBuf {
-        use reqwest::blocking::Client;
+        use std::io::Read;
         use zip::ZipArchive;
 
         fs::create_dir_all(target_dir).expect("Failed to create target directory");
 
-        let client = Client::builder()
+        let agent = ureq::AgentBuilder::new()
             .timeout(std::time::Duration::from_secs(300))
-            .build()
-            .expect("Failed to create HTTP client");
+            .build();
 
         println!("cargo:warning=Downloading {} from {}", name, url);
         let max_attempts = 5;
         let mut response = None;
 
         for attempt in 1..=max_attempts {
-            let err_msg = match client.get(url).send() {
-                Ok(resp) if resp.status().is_success() => {
+            let err_msg = match agent.get(url).call() {
+                Ok(resp) => {
                     response = Some(resp);
                     break;
                 }
-                Ok(resp) => format!("HTTP {}", resp.status()),
+                Err(ureq::Error::Status(code, _)) => format!("HTTP {}", code),
                 Err(err) => err.to_string(),
             };
 
@@ -613,10 +612,13 @@ mod build_tesseract {
             std::thread::sleep(std::time::Duration::from_secs(backoff));
         }
 
-        let mut response = response.expect("unreachable: download loop must either succeed or panic");
+        let response = response.expect("unreachable: download loop must either succeed or panic");
 
         let mut content = Vec::new();
-        response.copy_to(&mut content).expect("Failed to read archive content");
+        response
+            .into_reader()
+            .read_to_end(&mut content)
+            .expect("Failed to read archive content");
 
         println!("cargo:warning=Downloaded {} bytes for {}", content.len(), name);
 

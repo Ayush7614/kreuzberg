@@ -20,11 +20,31 @@ name = "kreuzberg_rb"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = []
+default = ["embeddings"]
+embeddings = ["kreuzberg/embeddings"]
 
 [dependencies]
 async-trait = "0.1.89"
-kreuzberg = { path = "../../../vendor/kreuzberg", features = ["full"] }
+kreuzberg = { path = "../../../vendor/kreuzberg", default-features = false, features = [
+    "pdf",
+    "excel",
+    "office",
+    "email",
+    "html",
+    "xml",
+    "archives",
+    "ocr",
+    "language-detection",
+    "chunking",
+    "embeddings",
+    "quality",
+    "keywords",
+    "api",
+    "mcp",
+    "otel",
+    "bundled-pdfium",
+    "tokio-runtime",
+] }
 kreuzberg-ffi = { path = "../../../vendor/kreuzberg-ffi" }
 magnus = { git = "https://github.com/matsadler/magnus", rev = "f6db11769efb517427bf7f121f9c32e18b059b38", features = [
     "rb-sys",
