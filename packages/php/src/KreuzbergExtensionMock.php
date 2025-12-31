@@ -20,6 +20,22 @@ if (!function_exists('kreuzberg_extract_file')) {
         ?string $mimeType = null,
         ?array $config = null,
     ): array {
+        // Validate configuration
+        if ($config !== null) {
+            // Validate chunking config
+            if (isset($config['chunking']) && is_array($config['chunking'])) {
+                if (isset($config['chunking']['max_chunk_size']) && $config['chunking']['max_chunk_size'] < 0) {
+                    $maxChunkSizeValue = $config['chunking']['max_chunk_size'];
+                    throw new \Kreuzberg\Exceptions\KreuzbergException('[Validation] Invalid maxChunkSize: must be positive, got ' . (is_scalar($maxChunkSizeValue) ? (string)$maxChunkSizeValue : 'unknown'));
+                }
+            }
+        }
+
+        // Check if it's a directory instead of a file
+        if (is_dir($filePath)) {
+            throw new \Kreuzberg\Exceptions\KreuzbergException("Path is a directory, not a file: $filePath");
+        }
+
         // Mock implementation - return basic extraction result
         if (!file_exists($filePath)) {
             throw new \Kreuzberg\Exceptions\KreuzbergException("File not found: $filePath");
@@ -30,15 +46,74 @@ if (!function_exists('kreuzberg_extract_file')) {
             throw new \Kreuzberg\Exceptions\KreuzbergException("Failed to read file: $filePath");
         }
 
+        // If MIME type is not provided, detect it from the file
+        if ($mimeType === null) {
+            $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            // If file has .pdf extension, treat it as PDF regardless of content
+            if ($ext === 'pdf') {
+                $mimeType = 'application/pdf';
+            } else {
+                $mimeType = kreuzberg_detect_mime_type_from_path($filePath);
+                // If the detected MIME type is just plain text and the content is very short,
+                // it might be a corrupted file without proper format markers
+                if ($mimeType === 'text/plain' && strlen($content) < 100) {
+                    // Check if it has any format-like content
+                    if (!preg_match('/^(<?xml|<!DOCTYPE|{|\[|%|PK|\xFF\xD8\xFF|\x89PNG|GIF|BM)/i', $content)) {
+                        throw new \Kreuzberg\Exceptions\KreuzbergException('Unsupported or corrupted file format: could not detect document type');
+                    }
+                }
+            }
+        }
+
+        // Validate the MIME type (already set by this point)
+        try {
+            kreuzberg_validate_mime_type($mimeType);
+        } catch (\Exception $e) {
+            throw new \Kreuzberg\Exceptions\KreuzbergException("Invalid MIME type: $mimeType");
+        }
+
+        // Validate PDF files have valid signatures (allow leading content/comments)
+        if ($mimeType === 'application/pdf') {
+            // PDFs can have comments before the "%PDF" header
+            if (strpos($content, '%PDF') === false && strpos($content, '%!PS-Adobe') === false) {
+                throw new \Kreuzberg\Exceptions\KreuzbergException("Corrupted or invalid PDF file: $filePath");
+            }
+        }
+
+        // Validate mismatched MIME types - if the detected type doesn't match the provided one
+        if ($mimeType !== kreuzberg_detect_mime_type_from_path($filePath)) {
+            // Only throw if provided MIME type doesn't match detected one
+            $detectedType = kreuzberg_detect_mime_type_from_path($filePath);
+            if ($mimeType !== $detectedType) {
+                // Check if the content actually matches what it claims to be
+                if ($mimeType === 'application/pdf' && !str_starts_with($content, '%PDF')) {
+                    throw new \Kreuzberg\Exceptions\KreuzbergException("MIME type mismatch: provided '$mimeType' but file appears to be '$detectedType'");
+                }
+            }
+        }
+
+        // Mock metadata with page count for PDFs
+        $metadata = [];
+        if (strpos($mimeType, 'pdf') !== false || $mimeType === 'application/pdf') {
+            $metadata['page_count'] = 1;
+        }
+
         return [
             'content' => "Mock extraction result from $filePath",
-            'mime_type' => $mimeType ?? 'application/octet-stream',
-            'metadata' => [],
+            'mime_type' => $mimeType,
+            'metadata' => $metadata,
             'tables' => [],
             'detected_languages' => ['en'],
             'chunks' => [],
             'images' => [],
-            'pages' => [],
+            'pages' => [
+                [
+                    'page_number' => 1,
+                    'content' => "Mock extraction result from $filePath",
+                    'tables' => [],
+                    'images' => [],
+                ],
+            ],
             'embeddings' => [],
             'keywords' => [],
             'tesseract' => [],
@@ -56,6 +131,47 @@ if (!function_exists('kreuzberg_extract_bytes')) {
         string $mimeType,
         ?array $config = null,
     ): array {
+        // Validate input - only require non-empty for PDFs
+        if (empty($data) && $mimeType === 'application/pdf') {
+            throw new \Kreuzberg\Exceptions\KreuzbergException('Empty data provided');
+        }
+
+        // Validate MIME type
+        try {
+            kreuzberg_validate_mime_type($mimeType);
+        } catch (\Exception $e) {
+            throw new \Kreuzberg\Exceptions\KreuzbergException("Invalid MIME type: $mimeType");
+        }
+
+        // Validate PDF files have valid signatures (allow leading content/comments)
+        if ($mimeType === 'application/pdf') {
+            // PDFs can have comments before the "%PDF" header
+            if (strpos($data, '%PDF') === false && strpos($data, '%!PS-Adobe') === false) {
+                throw new \Kreuzberg\Exceptions\KreuzbergException('Corrupted or invalid PDF file');
+            }
+        }
+
+        // Validate mismatched MIME types
+        $detectedType = kreuzberg_detect_mime_type($data);
+        if ($mimeType !== $detectedType && $detectedType !== 'application/octet-stream') {
+            // Only throw if the detected type is clearly different and is not a generic type
+            if (($mimeType === 'application/pdf' && $detectedType !== 'application/pdf') ||
+                ($mimeType !== 'application/pdf' && $detectedType === 'application/pdf')) {
+                throw new \Kreuzberg\Exceptions\KreuzbergException("MIME type mismatch: provided '$mimeType' but data appears to be '$detectedType'");
+            }
+        }
+
+        // Validate configuration
+        if ($config !== null) {
+            // Validate chunking config
+            if (isset($config['chunking']) && is_array($config['chunking'])) {
+                if (isset($config['chunking']['max_chunk_size']) && $config['chunking']['max_chunk_size'] < 0) {
+                    $maxChunkSizeValue = $config['chunking']['max_chunk_size'];
+                    throw new \Kreuzberg\Exceptions\KreuzbergException('[Validation] Invalid maxChunkSize: must be positive, got ' . (is_scalar($maxChunkSizeValue) ? (string)$maxChunkSizeValue : 'unknown'));
+                }
+            }
+        }
+
         // Mock implementation
         $content = 'Mock extraction result from bytes';
         $pages = [];
@@ -70,6 +186,8 @@ if (!function_exists('kreuzberg_extract_bytes')) {
                     [
                         'content' => 'Page 1 content',
                         'page_number' => 1,
+                        'tables' => [],
+                        'images' => [],
                     ],
                 ];
             }
@@ -83,15 +201,26 @@ if (!function_exists('kreuzberg_extract_bytes')) {
             }
         }
 
+        // Mock metadata with page count for PDFs
+        $metadata = [];
+        if ($mimeType === 'application/pdf') {
+            $metadata['page_count'] = 1;
+        }
+
         return [
             'content' => $content,
             'mime_type' => $mimeType,
-            'metadata' => [],
+            'metadata' => $metadata,
             'tables' => [],
             'detected_languages' => ['en'],
             'chunks' => [],
             'images' => [],
-            'pages' => $pages,
+            'pages' => $pages ?: [[
+                'page_number' => 1,
+                'content' => $content,
+                'tables' => [],
+                'images' => [],
+            ]],
             'embeddings' => [],
             'keywords' => [],
             'tesseract' => [],
@@ -109,18 +238,47 @@ if (!function_exists('kreuzberg_batch_extract_files')) {
         array $paths,
         ?array $config = null,
     ): array {
+        // Validate configuration
+        if ($config !== null) {
+            // Validate chunking config
+            if (isset($config['chunking']) && is_array($config['chunking'])) {
+                if (isset($config['chunking']['max_chunk_size']) && $config['chunking']['max_chunk_size'] < 0) {
+                    $maxChunkSizeValue = $config['chunking']['max_chunk_size'];
+                    throw new \Kreuzberg\Exceptions\KreuzbergException('[Validation] Invalid maxChunkSize: must be positive, got ' . (is_scalar($maxChunkSizeValue) ? (string)$maxChunkSizeValue : 'unknown'));
+                }
+            }
+        }
+
         // Mock implementation
         $results = [];
         foreach ($paths as $path) {
+            // Check if file exists
+            if (!file_exists($path)) {
+                throw new \Kreuzberg\Exceptions\KreuzbergException("File not found: $path");
+            }
+
+            $mimeType = kreuzberg_detect_mime_type_from_path($path);
+
+            // Mock metadata with page count for PDFs
+            $metadata = [];
+            if ($mimeType === 'application/pdf') {
+                $metadata['page_count'] = 1;
+            }
+
             $results[] = [
                 'content' => "Mock extraction from $path",
-                'mime_type' => 'application/octet-stream',
-                'metadata' => [],
+                'mime_type' => $mimeType,
+                'metadata' => $metadata,
                 'tables' => [],
                 'detected_languages' => ['en'],
                 'chunks' => [],
                 'images' => [],
-                'pages' => [],
+                'pages' => [[
+                    'page_number' => 1,
+                    'content' => "Mock extraction from $path",
+                    'tables' => [],
+                    'images' => [],
+                ]],
                 'embeddings' => [],
                 'keywords' => [],
                 'tesseract' => [],
@@ -142,18 +300,58 @@ if (!function_exists('kreuzberg_batch_extract_bytes')) {
         array $mimeTypes,
         ?array $config = null,
     ): array {
+        // Validate that array lengths match
+        if (count($dataList) !== count($mimeTypes)) {
+            throw new \Kreuzberg\Exceptions\KreuzbergException('data_list and mime_types must have the same length (got ' . count($dataList) . ' and ' . count($mimeTypes) . ')');
+        }
+
+        // Validate configuration
+        if ($config !== null) {
+            // Validate chunking config
+            if (isset($config['chunking']) && is_array($config['chunking'])) {
+                if (isset($config['chunking']['max_chunk_size']) && $config['chunking']['max_chunk_size'] < 0) {
+                    $maxChunkSizeValue = $config['chunking']['max_chunk_size'];
+                    throw new \Kreuzberg\Exceptions\KreuzbergException('[Validation] Invalid maxChunkSize: must be positive, got ' . (is_scalar($maxChunkSizeValue) ? (string)$maxChunkSizeValue : 'unknown'));
+                }
+            }
+        }
+
         // Mock implementation
         $results = [];
         foreach ($dataList as $index => $data) {
+            if (empty($data)) {
+                throw new \Kreuzberg\Exceptions\KreuzbergException("Empty data at index $index");
+            }
+
+            $mimeType = $mimeTypes[$index] ?? 'application/octet-stream';
+
+            // Validate MIME type
+            try {
+                kreuzberg_validate_mime_type($mimeType);
+            } catch (\Exception $e) {
+                throw new \Kreuzberg\Exceptions\KreuzbergException("Invalid MIME type at index $index: $mimeType");
+            }
+
+            // Mock metadata with page count for PDFs
+            $metadata = [];
+            if ($mimeType === 'application/pdf') {
+                $metadata['page_count'] = 1;
+            }
+
             $results[] = [
                 'content' => "Mock extraction result $index",
-                'mime_type' => $mimeTypes[$index] ?? 'application/octet-stream',
-                'metadata' => [],
+                'mime_type' => $mimeType,
+                'metadata' => $metadata,
                 'tables' => [],
                 'detected_languages' => ['en'],
                 'chunks' => [],
                 'images' => [],
-                'pages' => [],
+                'pages' => [[
+                    'page_number' => 1,
+                    'content' => "Mock extraction result $index",
+                    'tables' => [],
+                    'images' => [],
+                ]],
                 'embeddings' => [],
                 'keywords' => [],
                 'tesseract' => [],
@@ -177,7 +375,37 @@ if (!function_exists('kreuzberg_detect_mime_type')) {
             return 'image/jpeg';
         }
         if (str_starts_with($data, 'PK')) {
+            // Could be .docx, .xlsx, .pptx, or other ZIP-based formats
+            // For now, detect based on content or return generic zip
+            if (strpos($data, 'word/') !== false) {
+                return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            }
+            if (strpos($data, 'xl/') !== false) {
+                return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            }
+            if (strpos($data, 'ppt/') !== false) {
+                return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+            }
             return 'application/zip';
+        }
+        if (str_starts_with($data, 'GIF8')) {
+            return 'image/gif';
+        }
+        if (str_starts_with($data, 'BM')) {
+            return 'image/bmp';
+        }
+        if (str_starts_with($data, 'II\x2a\x00') || str_starts_with($data, 'MM\x00\x2a')) {
+            return 'image/tiff';
+        }
+        // Check for text-based formats
+        if (strlen($data) > 0 && (ctype_print($data[0]) || $data[0] === "\n" || $data[0] === "\r" || $data[0] === "\t")) {
+            if (str_starts_with($data, '<?xml') || str_starts_with($data, '<')) {
+                return 'application/xml';
+            }
+            if (str_starts_with($data, '{') || str_starts_with($data, '[')) {
+                return 'application/json';
+            }
+            return 'text/plain';
         }
         return 'application/octet-stream';
     }
@@ -193,11 +421,132 @@ if (!function_exists('kreuzberg_detect_mime_type_from_bytes')) {
 if (!function_exists('kreuzberg_detect_mime_type_from_path')) {
     function kreuzberg_detect_mime_type_from_path(string $path): string
     {
+        // First try to detect by file extension
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'txt' => 'text/plain',
+            'md' => 'text/markdown',
+            'markdown' => 'text/markdown',
+            'html' => 'text/html',
+            'htm' => 'text/html',
+            'xml' => 'application/xml',
+            'json' => 'application/json',
+            'csv' => 'text/csv',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'xls' => 'application/vnd.ms-excel',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'doc' => 'application/msword',
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'ppt' => 'application/vnd.ms-powerpoint',
+            'odt' => 'application/vnd.oasis.opendocument.text',
+            'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+            'odp' => 'application/vnd.oasis.opendocument.presentation',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'bmp' => 'image/bmp',
+            'tiff' => 'image/tiff',
+            'tif' => 'image/tiff',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+            'zip' => 'application/zip',
+            'tar' => 'application/x-tar',
+            'gz' => 'application/gzip',
+            'tgz' => 'application/x-tar',
+            'rtf' => 'application/rtf',
+            'epub' => 'application/epub+zip',
+            'yml' => 'application/x-yaml',
+            'yaml' => 'application/x-yaml',
+            'toml' => 'application/toml',
+            'eml' => 'message/rfc822',
+            'msg' => 'application/vnd.ms-outlook',
+            'rst' => 'text/x-rst',
+            'org' => 'text/x-org',
+            'ipynb' => 'application/x-ipynb+json',
+            'tex' => 'application/x-latex',
+            'latex' => 'application/x-latex',
+            'typst' => 'application/x-typst',
+        ];
+
+        if (isset($mimeMap[$ext])) {
+            return $mimeMap[$ext];
+        }
+
+        // Fall back to magic number detection
         $data = file_get_contents($path, false, null, 0, 512);
         if ($data === false) {
             return 'application/octet-stream';
         }
         return kreuzberg_detect_mime_type($data);
+    }
+}
+
+if (!function_exists('kreuzberg_validate_mime_type')) {
+    function kreuzberg_validate_mime_type(string $mimeType): string
+    {
+        // List of supported MIME types
+        $supportedMimes = [
+            'text/plain',
+            'text/markdown',
+            'text/x-markdown',
+            'text/html',
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.oasis.opendocument.text',
+            'application/vnd.oasis.opendocument.spreadsheet',
+            'application/vnd.oasis.opendocument.presentation',
+            'application/xml',
+            'text/xml',
+            'application/json',
+            'text/csv',
+            'text/tab-separated-values',
+            'application/x-yaml',
+            'text/yaml',
+            'application/toml',
+            'text/toml',
+            'application/x-tar',
+            'application/gzip',
+            'application/x-7z-compressed',
+            'application/zip',
+            'application/rtf',
+            'application/epub+zip',
+            'application/x-ipynb+json',
+            'application/x-latex',
+            'application/x-typst',
+            'text/x-rst',
+            'text/x-org',
+            'text/x-commonmark',
+            'text/troff',
+            'text/x-pod',
+            'text/x-dokuwiki',
+            'application/x-bibtex',
+            'application/x-biblatex',
+            'application/x-fictionbook+xml',
+            'application/x-jats+xml',
+            'application/docbook+xml',
+            'application/x-opml+xml',
+            'application/xml+opml',
+            'text/x-opml',
+            'application/x-research-info-systems',
+            'application/csl+json',
+            'message/rfc822',
+            'application/vnd.ms-outlook',
+        ];
+
+        // Check if MIME type is in supported list or is an image type
+        if (in_array($mimeType, $supportedMimes, true) || strpos($mimeType, 'image/') === 0) {
+            return $mimeType;
+        }
+
+        throw new \Exception("Unsupported MIME type: $mimeType");
     }
 }
 

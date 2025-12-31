@@ -40,10 +40,16 @@ function extract_file(
 ): ExtractionResult {
     $config ??= new ExtractionConfig();
 
-    /** @var array<string, mixed> $resultArray */
-    $resultArray = \kreuzberg_extract_file($filePath, $mimeType, $config->toArray());
+    $result = \kreuzberg_extract_file($filePath, $mimeType, $config->toArray());
 
-    return ExtractionResult::fromArray($resultArray);
+    // Handle both PHP object (from Rust extension) and array (from mock)
+    // In strict-types mode, the Rust extension returns ExtractionResult, mock returns array
+    // @phpstan-ignore-next-line instanceof.alwaysFalse -- Rust extension may return ExtractionResult
+    if ($result instanceof ExtractionResult) {
+        return $result;
+    }
+
+    return ExtractionResult::fromArray($result);
 }
 
 /**
@@ -71,10 +77,16 @@ function extract_bytes(
 ): ExtractionResult {
     $config ??= new ExtractionConfig();
 
-    /** @var array<string, mixed> $resultArray */
-    $resultArray = \kreuzberg_extract_bytes($data, $mimeType, $config->toArray());
+    $result = \kreuzberg_extract_bytes($data, $mimeType, $config->toArray());
 
-    return ExtractionResult::fromArray($resultArray);
+    // Handle both PHP object (from Rust extension) and array (from mock)
+    // In strict-types mode, the Rust extension returns ExtractionResult, mock returns array
+    // @phpstan-ignore-next-line instanceof.alwaysFalse -- Rust extension may return ExtractionResult
+    if ($result instanceof ExtractionResult) {
+        return $result;
+    }
+
+    return ExtractionResult::fromArray($result);
 }
 
 /**
@@ -103,13 +115,18 @@ function batch_extract_files(
 ): array {
     $config ??= new ExtractionConfig();
 
-    /** @var array<array<string, mixed>> $resultArrays */
-    $resultArrays = \kreuzberg_batch_extract_files($paths, $config->toArray());
+    /** @var array<ExtractionResult|array<string, mixed>> $results */
+    $results = \kreuzberg_batch_extract_files($paths, $config->toArray());
 
     return array_map(
-        /** @param array<string, mixed> $resultArray */
-        static fn (array $resultArray): ExtractionResult => ExtractionResult::fromArray($resultArray),
-        $resultArrays,
+        /** @param ExtractionResult|array<string, mixed> $result */
+        static function ($result): ExtractionResult {
+            if ($result instanceof ExtractionResult) {
+                return $result;
+            }
+            return ExtractionResult::fromArray($result);
+        },
+        $results,
     );
 }
 
@@ -142,13 +159,18 @@ function batch_extract_bytes(
 ): array {
     $config ??= new ExtractionConfig();
 
-    /** @var array<array<string, mixed>> $resultArrays */
-    $resultArrays = \kreuzberg_batch_extract_bytes($dataList, $mimeTypes, $config->toArray());
+    /** @var array<ExtractionResult|array<string, mixed>> $results */
+    $results = \kreuzberg_batch_extract_bytes($dataList, $mimeTypes, $config->toArray());
 
     return array_map(
-        /** @param array<string, mixed> $resultArray */
-        static fn (array $resultArray): ExtractionResult => ExtractionResult::fromArray($resultArray),
-        $resultArrays,
+        /** @param ExtractionResult|array<string, mixed> $result */
+        static function ($result): ExtractionResult {
+            if ($result instanceof ExtractionResult) {
+                return $result;
+            }
+            return ExtractionResult::fromArray($result);
+        },
+        $results,
     );
 }
 
