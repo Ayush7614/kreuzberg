@@ -23,38 +23,6 @@ namespace Kreuzberg\Config;
  */
 readonly class ExtractionConfig
 {
-    /**
-     * Embedding generation configuration.
-     *
-     * Configures how text chunks are converted into embeddings (vector representations)
-     * for semantic search and similarity matching.
-     *
-     * @var EmbeddingConfig|null
-     * @default null
-     */
-    public ?EmbeddingConfig $embedding;
-
-    /**
-     * Keyword extraction configuration.
-     *
-     * Configures keyword extraction parameters such as maximum number of keywords
-     * and minimum relevance score thresholds.
-     *
-     * @var KeywordConfig|null
-     * @default null
-     */
-    public ?KeywordConfig $keyword;
-
-    /**
-     * Page extraction configuration.
-     *
-     * Configures page-level extraction options including page markers and format.
-     *
-     * @var PageConfig|null
-     * @default null
-     */
-    public ?PageConfig $page;
-
     public function __construct(
         /**
          * OCR configuration.
@@ -88,7 +56,17 @@ readonly class ExtractionConfig
          * @default null
          */
         public ?ChunkingConfig $chunking = null,
-        ?EmbeddingConfig $embedding = null,
+
+        /**
+         * Embedding generation configuration.
+         *
+         * Configures how text chunks are converted into embeddings (vector representations)
+         * for semantic search and similarity matching.
+         *
+         * @var EmbeddingConfig|null
+         * @default null
+         */
+        public ?EmbeddingConfig $embedding = null,
 
         /**
          * Image extraction configuration.
@@ -100,7 +78,16 @@ readonly class ExtractionConfig
          * @default null
          */
         public ?ImageExtractionConfig $imageExtraction = null,
-        ?PageConfig $page = null,
+
+        /**
+         * Page extraction configuration.
+         *
+         * Configures page-level extraction options including page markers and format.
+         *
+         * @var PageConfig|null
+         * @default null
+         */
+        public ?PageConfig $page = null,
 
         /**
          * Language detection configuration.
@@ -112,7 +99,17 @@ readonly class ExtractionConfig
          * @default null
          */
         public ?LanguageDetectionConfig $languageDetection = null,
-        ?KeywordConfig $keyword = null,
+
+        /**
+         * Keyword extraction configuration.
+         *
+         * Configures keyword extraction parameters such as maximum number of keywords
+         * and minimum relevance score thresholds.
+         *
+         * @var KeywordConfig|null
+         * @default null
+         */
+        public ?KeywordConfig $keyword = null,
 
         /**
          * Enable image extraction from documents.
@@ -159,16 +156,7 @@ readonly class ExtractionConfig
          * @default null
          */
         public ?string $outputFormat = null,
-        ?EmbeddingConfig $embeddings = null,
-        ?KeywordConfig $keywords = null,
-        ?PageConfig $pages = null,
     ) {
-        // Support both 'embedding' and 'embeddings' parameter names
-        $this->embedding = $embeddings ?? $embedding;
-        // Support both 'keyword' and 'keywords' parameter names
-        $this->keyword = $keywords ?? $keyword;
-        // Support both 'page' and 'pages' parameter names
-        $this->page = $pages ?? $page;
     }
 
     /**

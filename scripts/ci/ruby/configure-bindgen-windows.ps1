@@ -89,6 +89,57 @@ Write-Host ""
 # Build the extra clang args with all necessary paths and flags
 $extra = "-I$includeRoot -I$compatForward -fms-extensions -fstack-protector-strong -fno-omit-frame-pointer -fno-fast-math"
 
+# Add blocklists for intrinsic headers that conflict between GCC and Clang
+# These headers aren't needed by rb-sys and cause bindgen errors on Windows
+$intrinsicHeaders = @(
+    "ia32intrin.h",
+    "immintrin.h",
+    "ammintrin.h",
+    "emmintrin.h",
+    "pmmintrin.h",
+    "tmmintrin.h",
+    "smmintrin.h",
+    "nmmintrin.h",
+    "wmmintrin.h",
+    "popcntintrin.h",
+    "abmintrin.h",
+    "fmaintrin.h",
+    "lzcntintrin.h",
+    "bmiintrin.h",
+    "bmmi2intrin.h",
+    "tbmintrin.h",
+    "avxintrin.h",
+    "avx2intrin.h",
+    "avx512fintrin.h",
+    "avx512cdintrin.h",
+    "avx512erintrin.h",
+    "avx512pfintrin.h",
+    "avx512vldqintrin.h",
+    "avx512vbmiintrin.h",
+    "avx512vbmi2intrin.h",
+    "avx512ifmaintrin.h",
+    "avx512vpopcntdqintrin.h",
+    "vaesintrin.h",
+    "vpclmulqdqintrin.h",
+    "gfniintrin.h",
+    "avxvnniintrin.h",
+    "avxneconvertintrin.h",
+    "cetintrin.h",
+    "cmpccxaddintrin.h",
+    "waitpkgintrin.h",
+    "xsaveintrin.h",
+    "xsavesintrin.h",
+    "xsavecintrin.h",
+    "lwpintrin.h",
+    "rtmintrin.h",
+    "mmintrin.h",
+    "mm3dnow.h"
+)
+
+foreach ($header in $intrinsicHeaders) {
+    $extra += " -blocklist-header=$header"
+}
+
 # Add all detected GCC include paths
 foreach ($path in $gccIncludePaths) {
     $extra += " -isystem$path"

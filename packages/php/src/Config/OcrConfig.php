@@ -9,17 +9,6 @@ namespace Kreuzberg\Config;
  */
 readonly class OcrConfig
 {
-    /**
-     * Tesseract-specific OCR configuration.
-     *
-     * Contains advanced settings for Tesseract OCR engine including page segmentation mode,
-     * engine mode, character whitelists/blacklists, and table detection options.
-     *
-     * @var TesseractConfig|null
-     * @default null
-     */
-    public ?TesseractConfig $tesseractConfig;
-
     public function __construct(
         /**
          * OCR backend to use for text extraction.
@@ -45,7 +34,17 @@ readonly class OcrConfig
          * @default 'eng'
          */
         public string $language = 'eng',
-        ?TesseractConfig $tesseractConfig = null,
+
+        /**
+         * Tesseract-specific OCR configuration.
+         *
+         * Contains advanced settings for Tesseract OCR engine including page segmentation mode,
+         * engine mode, character whitelists/blacklists, and table detection options.
+         *
+         * @var TesseractConfig|null
+         * @default null
+         */
+        public ?TesseractConfig $tesseractConfig = null,
 
         /**
          * Image preprocessing configuration for OCR.
@@ -57,11 +56,7 @@ readonly class OcrConfig
          * @default null
          */
         public ?ImagePreprocessingConfig $imagePreprocessing = null,
-        // Support 'tesseract' as an alias for 'tesseractConfig'
-        ?TesseractConfig $tesseract = null,
     ) {
-        // Support both 'tesseractConfig' and 'tesseract' parameter names
-        $this->tesseractConfig = $tesseract ?? $tesseractConfig;
     }
 
     /**
@@ -112,8 +107,8 @@ readonly class OcrConfig
         return new self(
             backend: $backend,
             language: $language,
-            tesseractConfig: $tesseractConfig,
-            imagePreprocessing: $imagePreprocessing,
+            tesseractConfig: $tesseractConfig ?? null,
+            imagePreprocessing: $imagePreprocessing ?? null,
         );
     }
 
