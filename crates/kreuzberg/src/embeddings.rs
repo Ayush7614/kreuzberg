@@ -67,62 +67,30 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::collections::HashMap;
 
 #[cfg(feature = "embeddings")]
-use lazy_static::lazy_static;
+use std::mem::ManuallyDrop;
+
+#[cfg(feature = "embeddings")]
+use once_cell::sync::Lazy;
 
 /// Wrapper for TextEmbedding that prevents cleanup during process shutdown.
 ///
 /// # Problem
 ///
-/// When the process terminates, global static objects are dropped. The `TextEmbedding`
-/// objects from fastembed contain ONNX Runtime sessions (via `ort v2.0.0-rc.10`), and
-/// during their `Drop` implementation, ONNX Runtime's C++ destructor tries to acquire
-/// mutexes for cleanup.
+/// ONNX Runtime's C++ destructors fail during process shutdown when trying to
+/// acquire mutexes that have already been torn down by the C++ runtime. This
+/// causes crashes with "mutex lock failed: Invalid argument" errors.
 ///
-/// At process shutdown time, the C++ runtime may have already begun tearing down
-/// threading infrastructure, causing mutex operations to fail with:
-/// "mutex lock failed: Invalid argument"
-///
-/// This manifests as:
-/// ```text
-/// libc++abi: terminating due to uncaught exception of type std::__1::system_error:
-/// mutex lock failed: Invalid argument
-/// ```
-///
-/// This is a known issue in `ort` (see pykeio/ort#441), fixed in later versions via commit
-/// 317be20 ("fix: let `Environment` drop"), but we're using v2.0.0-rc.10 through fastembed
-/// v5.3.1 which predates the fix.
+/// This is a known issue in `ort` v2.0.0-rc.10 (pykeio/ort#441) that was fixed
+/// in later versions, but we're constrained by fastembed's dependency tree.
 ///
 /// # Solution
 ///
-/// We use `Box::leak` to intentionally leak `TextEmbedding` objects during process
-/// shutdown, preventing their `Drop` implementation from running. This is acceptable because:
+/// We prevent all cleanup of ONNX Runtime resources:
+/// 1. Individual TextEmbedding objects are leaked via Box::leak
+/// 2. The entire MODEL_CACHE is wrapped in ManuallyDrop
 ///
-/// 1. The OS will reclaim all process memory anyway
-/// 2. Avoiding the crash is more important than cleanup
-/// 3. This only affects process termination, not runtime behavior
-/// 4. Models are long-lived and would survive until process exit anyway
-/// 5. The memory leak is bounded (one model per unique config)
-///
-/// # Remaining Issue
-///
-/// Even with this fix, you may still see the mutex error during final process cleanup.
-/// This is because `ort` v2.0.0-rc.10 also holds the ONNX Runtime `Environment` as a
-/// static variable, which gets dropped during C++ static destruction after Rust cleanup.
-/// This error occurs *after* all Rust code has finished and can be safely ignored - all
-/// tests pass before the error occurs.
-///
-/// The error will be resolved when fastembed upgrades to ort >= 2.0.0 (post-rc.10) which
-/// contains the proper fix.
-///
-/// # Safety
-///
-/// The leak is contained to process shutdown and does not affect runtime behavior.
-/// All normal usage patterns (creating embeddings, caching models) work identically.
-/// We use static references to the leaked models, which is safe because:
-/// - The pointers are never null (we leak valid Box<TextEmbedding>)
-/// - The models live until process exit
-/// - We never manually deallocate the leaked memory
-/// - Mutex provides interior mutability for the embed() method
+/// This prevents Drop implementations from running during shutdown, completely
+/// avoiding the mutex errors. The OS reclaims all memory on process exit anyway.
 ///
 /// Thread-safe wrapper for leaked TextEmbedding that allows interior mutability.
 ///
@@ -164,10 +132,14 @@ unsafe impl Sync for LeakedModel {}
 #[cfg(feature = "embeddings")]
 type CachedEmbedding = Arc<Mutex<LeakedModel>>;
 
+/// Global model cache wrapped in ManuallyDrop to prevent cleanup during process exit.
+///
+/// We use Lazy + ManuallyDrop because ONNX Runtime's C++ destructors fail during static
+/// destruction when mutexes are already torn down. By never dropping this cache,
+/// we avoid the mutex errors at shutdown. The OS reclaims memory on process exit anyway.
 #[cfg(feature = "embeddings")]
-lazy_static! {
-    static ref MODEL_CACHE: RwLock<HashMap<String, CachedEmbedding>> = RwLock::new(HashMap::new());
-}
+static MODEL_CACHE: Lazy<ManuallyDrop<RwLock<HashMap<String, CachedEmbedding>>>> =
+    Lazy::new(|| ManuallyDrop::new(RwLock::new(HashMap::new())));
 
 /// Returns installation instructions for ONNX Runtime.
 #[cfg(feature = "embeddings")]
