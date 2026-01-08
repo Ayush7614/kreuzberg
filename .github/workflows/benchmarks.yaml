@@ -2300,7 +2300,7 @@ jobs:
     name: Aggregate & Publish Results
     needs: [setup, bench-native, bench-python-sync, bench-python-async, bench-python-batch, bench-node-async, bench-node-batch, bench-wasm-async, bench-wasm-batch, bench-ruby-sync, bench-ruby-batch, bench-go-sync, bench-go-batch, bench-java-sync, bench-csharp-sync, bench-elixir-sync, bench-elixir-batch, bench-php-sync, bench-php-batch, bench-docling, bench-docling-batch, bench-markitdown, bench-pandoc, bench-unstructured, bench-tika-sync, bench-tika-batch, bench-pymupdf4llm, bench-pdfplumber, bench-pdfplumber-batch, bench-mineru, bench-mineru-batch]
     runs-on: ubuntu-latest
-    if: always() && github.ref == 'refs/heads/main'
+    if: always() && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: write
     steps:
