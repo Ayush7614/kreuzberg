@@ -340,21 +340,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Elixir
-        uses: erlef/setup-elixir@v1
-        with:
-          elixir-version: "1.17"
-          otp-version: "26"
-
       - name: Check Hex.pm for existing version
         id: check
-        working-directory: packages/elixir
-        run: |
-          if mix hex.info kreuzberg > /dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+        run: scripts/publish/check_hex.sh "${{ needs.prepare.outputs.version }}" >> "$GITHUB_OUTPUT"
 
   check-homebrew:
     name: Check if Homebrew formula already published
